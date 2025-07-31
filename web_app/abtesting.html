@@ -1,0 +1,244 @@
+<!-- A/B Testing Panel -->
+<section id="abtests" class="panel">
+    <div class="panel-header">
+        <h3><i class="fas fa-flask"></i> A/B Testing</h3>
+        <div class="actions">
+            <button class="btn btn-outline" id="create-abtest"><i class="fas fa-plus"></i> New Test</button>
+            <button class="close-btn"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+    
+    <!-- Tabs for A/B Testing -->
+    <div class="tabs">
+        <div class="tab active" data-tab="active-tests">Active Tests</div>
+        <div class="tab" data-tab="completed-tests">Completed Tests</div>
+        <div class="tab" data-tab="create-test">Create Test</div>
+    </div>
+    
+    <!-- Active Tests Tab -->
+    <div class="tab-content active" id="active-tests">
+        <div class="table-container">
+            <table class="table" id="active-tests-table">
+                <thead>
+                    <tr>
+                        <th>Test ID</th>
+                        <th>Name</th>
+                        <th>Models</th>
+                        <th>Traffic Split</th>
+                        <th>Start Date</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Active tests will be populated here -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="alert alert-info mt-4">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <h4>About A/B Testing</h4>
+                <p>A/B testing allows you to compare the performance of different prediction models by splitting traffic between them. Monitor ongoing tests here and view results when complete.</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Completed Tests Tab -->
+    <div class="tab-content" id="completed-tests">
+        <div class="table-container">
+            <table class="table" id="completed-tests-table">
+                <thead>
+                    <tr>
+                        <th>Test ID</th>
+                        <th>Name</th>
+                        <th>Models</th>
+                        <th>Traffic Split</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Winner</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Completed tests will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Create Test Tab -->
+    <div class="tab-content" id="create-test">
+        <form id="create-test-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="test-name">Test Name</label>
+                    <input type="text" id="test-name" class="form-input" placeholder="Enter a descriptive name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="test-description">Description</label>
+                    <input type="text" id="test-description" class="form-input" placeholder="Brief description of this test">
+                </div>
+            </div>
+            
+            <h4 class="mb-4">Model Selection</h4>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="control-model">Control Model (A)</label>
+                    <select id="control-model" class="form-input form-select" required>
+                        <option value="" disabled selected>Select control model</option>
+                        <!-- Models will be populated here -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="variant-model">Variant Model (B)</label>
+                    <select id="variant-model" class="form-input form-select" required>
+                        <option value="" disabled selected>Select variant model</option>
+                        <!-- Models will be populated here -->
+                    </select>
+                </div>
+            </div>
+            
+            <h4 class="mb-4">Traffic Allocation</h4>
+            <div class="form-group">
+                <label for="traffic-split">Traffic Split (% to variant)</label>
+                <input type="range" id="traffic-split" class="form-range" min="10" max="90" step="10" value="50">
+                <div class="split-display">Control: <span id="control-percent">50%</span> / Variant: <span id="variant-percent">50%</span></div>
+            </div>
+            
+            <h4 class="mb-4">Test Duration</h4>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="test-duration">Duration</label>
+                    <input type="number" id="test-duration" class="form-input" min="1" value="7" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="duration-unit">Unit</label>
+                    <select id="duration-unit" class="form-input form-select">
+                        <option value="days" selected>Days</option>
+                        <option value="hours">Hours</option>
+                    </select>
+                </div>
+            </div>
+            
+            <h4 class="mb-4">Success Metrics</h4>
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" id="metric-accuracy" checked>
+                        Prediction Accuracy
+                    </label>
+                    <label>
+                        <input type="checkbox" id="metric-precision">
+                        Precision
+                    </label>
+                    <label>
+                        <input type="checkbox" id="metric-recall">
+                        Recall
+                    </label>
+                    <label>
+                        <input type="checkbox" id="metric-f1">
+                        F1 Score
+                    </label>
+                </div>
+            </div>
+            
+            <div class="flex-between mt-4">
+                <button type="button" class="btn btn-outline" id="cancel-test">Cancel</button>
+                <button type="submit" class="btn">Create Test</button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Test Detail View (hidden initially) -->
+    <div class="test-detail hidden" id="test-detail">
+        <div class="panel-header">
+            <h3><i class="fas fa-flask"></i> <span id="test-detail-name">Test Name</span></h3>
+            <div class="actions">
+                <button class="btn btn-outline" id="back-to-tests"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>
+        </div>
+        
+        <div class="test-info">
+            <div class="info-row">
+                <div class="info-item">
+                    <div class="info-label">Status</div>
+                    <div class="info-value" id="test-detail-status">Active</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Start Date</div>
+                    <div class="info-value" id="test-detail-start">2025-07-25</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">End Date</div>
+                    <div class="info-value" id="test-detail-end">2025-08-01</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Duration</div>
+                    <div class="info-value" id="test-detail-duration">7 days</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-models">
+            <div class="model-card">
+                <div class="model-header">
+                    <h4>Control Model (A)</h4>
+                    <div class="traffic-badge">50%</div>
+                </div>
+                <div class="model-name" id="test-model-a-name">Model A Name</div>
+                <div class="model-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Accuracy</div>
+                        <div class="metric-value" id="test-model-a-accuracy">85.2%</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Precision</div>
+                        <div class="metric-value" id="test-model-a-precision">82.7%</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Recall</div>
+                        <div class="metric-value" id="test-model-a-recall">79.3%</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="model-card">
+                <div class="model-header">
+                    <h4>Variant Model (B)</h4>
+                    <div class="traffic-badge">50%</div>
+                </div>
+                <div class="model-name" id="test-model-b-name">Model B Name</div>
+                <div class="model-metrics">
+                    <div class="metric">
+                        <div class="metric-label">Accuracy</div>
+                        <div class="metric-value" id="test-model-b-accuracy">87.9%</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Precision</div>
+                        <div class="metric-value" id="test-model-b-precision">84.3%</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-label">Recall</div>
+                        <div class="metric-value" id="test-model-b-recall">82.1%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h4>Performance Comparison</h4>
+            <canvas id="test-comparison-chart"></canvas>
+        </div>
+        
+        <div class="test-actions">
+            <button class="btn" id="stop-test">Stop Test</button>
+            <button class="btn btn-outline" id="export-results">Export Results</button>
+        </div>
+    </div>
+</section>

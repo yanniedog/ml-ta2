@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML-TA Trading Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-robot"></i>
+                <h1>ML-TA Trading Assistant</h1>
+            </div>
+            <div class="nav-items">
+                <div class="nav-item active" data-panel="home">Home</div>
+                <div class="nav-item" data-panel="predictions">Predictions</div>
+                <div class="nav-item advanced-feature" data-panel="monitoring">Monitoring</div>
+                <div class="nav-item advanced-feature" data-panel="abtesting">A/B Testing</div>
+            </div>
+            <div class="status">
+                <span class="status-dot healthy"></span>
+                <span class="status-text">System Online</span>
+            </div>
+        </header>
+
+        <!-- Welcome section -->
+        <section class="welcome">
+            <h2>Welcome to ML-TA Trading Assistant</h2>
+            <p>Your AI-powered crypto trading prediction platform</p>
+            
+            <!-- Mode switch for progressive disclosure -->
+            <div class="mode-switch">
+                <div class="mode-btn active" data-mode="basic">Basic Mode</div>
+                <div class="mode-btn" data-mode="advanced">Advanced Mode</div>
+            </div>
+        </section>
+
+        <!-- Feature cards -->
+        <section class="feature-area">
+            <div class="cards">
+                <!-- Basic Features -->
+                <div class="card" data-panel="prediction">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3>Make Prediction</h3>
+                    <p>Get crypto price predictions using our advanced machine learning models</p>
+                    <button class="btn">Get Prediction <i class="fas fa-arrow-right"></i></button>
+                </div>
+                
+                <div class="card" data-panel="history">
+                    <div class="card-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h3>Prediction History</h3>
+                    <p>View your past predictions and track their performance over time</p>
+                    <button class="btn">View History <i class="fas fa-arrow-right"></i></button>
+                </div>
+                
+                <div class="card" data-panel="health">
+                    <div class="card-icon">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <h3>System Status</h3>
+                    <p>Check the health and status of the ML-TA system and its components</p>
+                    <button class="btn">Check Status <i class="fas fa-arrow-right"></i></button>
+                </div>
+                
+                <!-- Advanced Features (hidden by default) -->
+                <div class="card advanced" data-panel="models">
+                    <span class="advanced-badge">Advanced</span>
+                    <div class="card-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3>Model Management</h3>
+                    <p>Explore and manage the available prediction models and their performance</p>
+                    <button class="btn">Manage Models <i class="fas fa-arrow-right"></i></button>
+                </div>
+                
+                <div class="card advanced" data-panel="abtests">
+                    <span class="advanced-badge">Advanced</span>
+                    <div class="card-icon">
+                        <i class="fas fa-flask"></i>
+                    </div>
+                    <h3>A/B Testing</h3>
+                    <p>Create, monitor, and analyze A/B tests between different prediction models</p>
+                    <button class="btn">View Tests <i class="fas fa-arrow-right"></i></button>
+                </div>
+                
+                <div class="card advanced" data-panel="analytics">
+                    <span class="advanced-badge">Advanced</span>
+                    <div class="card-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3>Advanced Analytics</h3>
+                    <p>Deep dive into model performance metrics and feature importance</p>
+                    <button class="btn">View Analytics <i class="fas fa-arrow-right"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feature panels -->
+        <!-- Prediction Panel -->
+        <section id="prediction" class="panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-chart-line"></i> Make a Prediction</h3>
+                <div class="actions">
+                    <button class="close-btn"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            
+            <form id="prediction-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="symbol">Cryptocurrency</label>
+                        <select id="symbol" class="form-input form-select" required>
+                            <option value="" disabled selected>Select cryptocurrency</option>
+                            <option value="BTC-USD">Bitcoin (BTC)</option>
+                            <option value="ETH-USD">Ethereum (ETH)</option>
+                            <option value="SOL-USD">Solana (SOL)</option>
+                            <option value="ADA-USD">Cardano (ADA)</option>
+                            <option value="DOT-USD">Polkadot (DOT)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="timeframe">Timeframe</label>
+                        <select id="timeframe" class="form-input form-select" required>
+                            <option value="" disabled selected>Select timeframe</option>
+                            <option value="1h">1 Hour</option>
+                            <option value="4h">4 Hours</option>
+                            <option value="1d">1 Day</option>
+                            <option value="1w">1 Week</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="advanced-options hidden">
+                    <h4 class="mb-4">Advanced Options</h4>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="model">Model Selection</label>
+                            <select id="model" class="form-input form-select">
+                                <option value="default">Default (Latest)</option>
+                                <option value="stable">Stable Release</option>
+                                <option value="experimental">Experimental</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="horizon">Prediction Horizon</label>
+                            <select id="horizon" class="form-input form-select">
+                                <option value="default">Default</option>
+                                <option value="short">Short-term</option>
+                                <option value="medium">Medium-term</option>
+                                <option value="long">Long-term</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex-between mt-4">
+                    <button type="button" class="btn btn-outline toggle-advanced">
+                        <i class="fas fa-sliders-h"></i> Advanced Options
+                    </button>
+                    <button type="submit" class="btn">
+                        <i class="fas fa-magic"></i> Generate Prediction
+                    </button>
+                </div>
+            </form>
+            
+            <div id="prediction-result" class="hidden mt-4">
+                <!-- Results will be shown here -->
+            </div>
+        </section>
+
+        <!-- Other panels will be added here -->
+        
+        <!-- History Panel -->
+        <section id="history" class="panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-history"></i> Prediction History</h3>
+                <div class="actions">
+                    <button class="close-btn"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table class="table" id="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Symbol</th>
+                            <th>Timeframe</th>
+                            <th>Prediction</th>
+                            <th>Actual</th>
+                            <th>Accuracy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- History data will be added here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="chart-container">
+                <canvas id="history-chart"></canvas>
+            </div>
+        </section>
+        
+        <!-- System Health Panel -->
+        <section id="health" class="panel">
+            <div class="panel-header">
+                <h3><i class="fas fa-heartbeat"></i> System Status</h3>
+                <div class="actions">
+                    <button class="close-btn"><i class="fas fa-times"></i></button>
+                </div>
+            </div>
+            
+            <div class="status-cards">
+                <div class="status-card healthy">
+                    <div class="status-icon"><i class="fas fa-server"></i></div>
+                    <div class="status-details">
+                        <h4>API Service</h4>
+                        <p>Online</p>
+                    </div>
+                </div>
+                
+                <div class="status-card healthy">
+                    <div class="status-icon"><i class="fas fa-database"></i></div>
+                    <div class="status-details">
+                        <h4>Data Pipeline</h4>
+                        <p>Running</p>
+                    </div>
+                </div>
+                
+                <div class="status-card healthy">
+                    <div class="status-icon"><i class="fas fa-brain"></i></div>
+                    <div class="status-details">
+                        <h4>Model Service</h4>
+                        <p>Operating</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Load Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Main app script -->
+    <script src="app.js"></script>
+</body>
+</html>

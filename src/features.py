@@ -19,21 +19,53 @@ try:
 except ImportError:
     SKLEARN_AVAILABLE = False
     # Simple fallback scalers
-    class RobustScaler:
+    class CustomRobustScaler:
+        """Custom implementation of RobustScaler when sklearn is not available."""
         def __init__(self):
             self.median_ = None
             self.scale_ = None
         
         def fit(self, X):
+            # Handle edge case where X is empty
+            if X is None or len(X) == 0:
+                raise ValueError("Cannot fit CustomRobustScaler on empty dataset")
+            
+            # Convert to numpy array if it's a DataFrame
+            if hasattr(X, 'values'):
+                X = X.values
+            
+            # Calculate median (50th percentile)
             self.median_ = np.median(X, axis=0)
+            
+            # Calculate IQR (75th - 25th percentile)
             self.scale_ = np.percentile(X, 75, axis=0) - np.percentile(X, 25, axis=0)
+            
+            # Handle zero-variance features (avoid division by zero)
+            # Replace zeros with ones in scale
+            self.scale_ = np.where(self.scale_ != 0, self.scale_, 1.0)
+            
             return self
         
         def transform(self, X):
+            # Convert to numpy array if it's a DataFrame
+            if hasattr(X, 'values'):
+                X = X.values
+                
+            # Verify that median_ and scale_ are initialized
+            if self.median_ is None or self.scale_ is None:
+                raise RuntimeError("CustomRobustScaler instance is not fitted yet. Call 'fit' before using this scaler.")
+            
+            # Apply the transformation: (X - median) / IQR
             return (X - self.median_) / self.scale_
+        
+        def fit_transform(self, X):
+            """Fit to data, then transform it."""
+            return self.fit(X).transform(X)
     
-    StandardScaler = RobustScaler
-    MinMaxScaler = RobustScaler
+    # Use our custom implementations as fallbacks
+    RobustScaler = CustomRobustScaler
+    StandardScaler = CustomRobustScaler
+    MinMaxScaler = CustomRobustScaler
     SelectKBest = None
     mutual_info_classif = None
     chi2 = None
@@ -735,7 +767,7 @@ class FeaturePipeline:
         result_df = df.copy()
         
         # Identify numeric columns to scale (exclude targets and metadata)
-        exclude_patterns = ['target_', 'timestamp', 'symbol', 'regime']
+        exclude_patterns = ['target', 'target_', 'timestamp', 'symbol', 'regime']
         numeric_cols = [col for col in df.columns 
                        if df[col].dtype in ['float64', 'int64'] 
                        and not any(pattern in col for pattern in exclude_patterns)]

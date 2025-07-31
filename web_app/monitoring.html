@@ -1,0 +1,789 @@
+<!-- Model Monitoring Panel -->
+<section id="monitoring" class="panel">
+    <div class="panel-header">
+        <h3><i class="fas fa-chart-bar"></i> Model Monitoring</h3>
+        <div class="actions">
+            <button class="btn btn-outline refresh-btn"><i class="fas fa-sync-alt"></i> Refresh</button>
+            <button class="close-btn"><i class="fas fa-times"></i></button>
+        </div>
+    </div>
+    
+    <!-- Dashboard Overview -->
+    <div class="dashboard-summary">
+        <div class="metric-card">
+            <div class="metric-icon success">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="metric-details">
+                <h4>Active Models</h4>
+                <div class="metric-value" id="active-models-count">3</div>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon primary">
+                <i class="fas fa-cloud"></i>
+            </div>
+            <div class="metric-details">
+                <h4>API Requests</h4>
+                <div class="metric-value" id="api-requests-count">1,245</div>
+                <div class="metric-change up">+12% <i class="fas fa-arrow-up"></i></div>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon warning">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <div class="metric-details">
+                <h4>Avg. Response Time</h4>
+                <div class="metric-value" id="avg-response-time">312ms</div>
+                <div class="metric-change down">-5% <i class="fas fa-arrow-down"></i></div>
+            </div>
+        </div>
+        
+        <div class="metric-card">
+            <div class="metric-icon info">
+                <i class="fas fa-bullseye"></i>
+            </div>
+            <div class="metric-details">
+                <h4>Prediction Accuracy</h4>
+                <div class="metric-value" id="prediction-accuracy">84.7%</div>
+                <div class="metric-change up">+2.3% <i class="fas fa-arrow-up"></i></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tabs for different monitoring views -->
+    <div class="tabs">
+        <div class="tab active" data-tab="model-performance">Model Performance</div>
+        <div class="tab" data-tab="system-health">System Health</div>
+        <div class="tab" data-tab="api-metrics">API Metrics</div>
+        <div class="tab" data-tab="alerts">Alerts <span class="badge">2</span></div>
+    </div>
+    
+    <!-- Model Performance Tab -->
+    <div class="tab-content active" id="model-performance">
+        <div class="filter-bar">
+            <div class="filter-group">
+                <label for="model-select">Model:</label>
+                <select id="model-select" class="form-select">
+                    <option value="all">All Models</option>
+                    <option value="model-1">Price Prediction v2.1</option>
+                    <option value="model-2">Market Sentiment v1.3</option>
+                    <option value="model-3">Trend Analysis v0.9</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="time-range">Time Range:</label>
+                <select id="time-range" class="form-select">
+                    <option value="24h">Last 24 Hours</option>
+                    <option value="7d" selected>Last 7 Days</option>
+                    <option value="30d">Last 30 Days</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="metric-type">Metric:</label>
+                <select id="metric-type" class="form-select">
+                    <option value="accuracy">Accuracy</option>
+                    <option value="precision">Precision</option>
+                    <option value="recall">Recall</option>
+                    <option value="f1">F1 Score</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="chart-container large">
+            <canvas id="performance-chart"></canvas>
+        </div>
+        
+        <div class="model-metrics-grid">
+            <div class="model-metric-card">
+                <div class="model-metric-header">
+                    <h4>Feature Importance</h4>
+                    <div class="model-badge">Price Prediction v2.1</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="feature-importance-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="model-metric-card">
+                <div class="model-metric-header">
+                    <h4>Confusion Matrix</h4>
+                    <div class="model-badge">Price Prediction v2.1</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="confusion-matrix-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Health Tab -->
+    <div class="tab-content" id="system-health">
+        <div class="resource-monitors">
+            <div class="resource-monitor">
+                <div class="resource-header">
+                    <h4>CPU Usage</h4>
+                    <span class="resource-value" id="cpu-usage">24%</span>
+                </div>
+                <div class="resource-bar">
+                    <div class="resource-bar-fill" style="width: 24%"></div>
+                </div>
+            </div>
+            
+            <div class="resource-monitor">
+                <div class="resource-header">
+                    <h4>Memory Usage</h4>
+                    <span class="resource-value" id="memory-usage">3.2 GB / 8 GB</span>
+                </div>
+                <div class="resource-bar">
+                    <div class="resource-bar-fill" style="width: 40%"></div>
+                </div>
+            </div>
+            
+            <div class="resource-monitor">
+                <div class="resource-header">
+                    <h4>Disk Space</h4>
+                    <span class="resource-value" id="disk-usage">120 GB / 500 GB</span>
+                </div>
+                <div class="resource-bar">
+                    <div class="resource-bar-fill" style="width: 24%"></div>
+                </div>
+            </div>
+            
+            <div class="resource-monitor">
+                <div class="resource-header">
+                    <h4>Network Traffic</h4>
+                    <span class="resource-value" id="network-traffic">2.3 MB/s</span>
+                </div>
+                <div class="resource-bar">
+                    <div class="resource-bar-fill" style="width: 35%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-container large mt-4">
+            <h4>System Resource Usage Over Time</h4>
+            <canvas id="system-resources-chart"></canvas>
+        </div>
+        
+        <div class="service-status">
+            <h4 class="mb-4">Service Status</h4>
+            <div class="table-container">
+                <table class="table" id="service-status-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Status</th>
+                            <th>Uptime</th>
+                            <th>Last Restart</th>
+                            <th>Load</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>API Service</td>
+                            <td><span class="status-badge healthy">Running</span></td>
+                            <td>7d 12h 34m</td>
+                            <td>Jul 24, 2025</td>
+                            <td>Low</td>
+                        </tr>
+                        <tr>
+                            <td>Data Pipeline</td>
+                            <td><span class="status-badge healthy">Running</span></td>
+                            <td>7d 12h 34m</td>
+                            <td>Jul 24, 2025</td>
+                            <td>Medium</td>
+                        </tr>
+                        <tr>
+                            <td>Model Service</td>
+                            <td><span class="status-badge healthy">Running</span></td>
+                            <td>7d 12h 34m</td>
+                            <td>Jul 24, 2025</td>
+                            <td>Medium</td>
+                        </tr>
+                        <tr>
+                            <td>MongoDB</td>
+                            <td><span class="status-badge healthy">Running</span></td>
+                            <td>14d 3h 12m</td>
+                            <td>Jul 17, 2025</td>
+                            <td>Low</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- API Metrics Tab -->
+    <div class="tab-content" id="api-metrics">
+        <div class="chart-container large">
+            <h4>API Request Volume</h4>
+            <canvas id="api-requests-chart"></canvas>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-detail-card">
+                <div class="metric-detail-header">
+                    <h4>Response Time Distribution</h4>
+                </div>
+                <div class="chart-container">
+                    <canvas id="response-time-chart"></canvas>
+                </div>
+            </div>
+            
+            <div class="metric-detail-card">
+                <div class="metric-detail-header">
+                    <h4>Error Rate</h4>
+                </div>
+                <div class="chart-container">
+                    <canvas id="error-rate-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="table-container mt-4">
+            <h4>Top API Endpoints</h4>
+            <table class="table" id="top-endpoints-table">
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Requests</th>
+                        <th>Avg. Response Time</th>
+                        <th>Error Rate</th>
+                        <th>Success</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>/api/v1/predict</td>
+                        <td>745</td>
+                        <td>324ms</td>
+                        <td>0.4%</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 99.6%"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>/api/v1/models</td>
+                        <td>312</td>
+                        <td>156ms</td>
+                        <td>0.0%</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 100%"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>/api/v1/health</td>
+                        <td>188</td>
+                        <td>42ms</td>
+                        <td>0.0%</td>
+                        <td>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 100%"></div>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Alerts Tab -->
+    <div class="tab-content" id="alerts">
+        <div class="alert-filters">
+            <div class="filter-group">
+                <label for="alert-severity">Severity:</label>
+                <select id="alert-severity" class="form-select">
+                    <option value="all">All Severities</option>
+                    <option value="critical">Critical</option>
+                    <option value="warning">Warning</option>
+                    <option value="info">Info</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="alert-status">Status:</label>
+                <select id="alert-status" class="form-select">
+                    <option value="all">All Statuses</option>
+                    <option value="active">Active</option>
+                    <option value="resolved">Resolved</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="alerts-list">
+            <div class="alert-item warning">
+                <div class="alert-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="alert-content">
+                    <div class="alert-title">
+                        <h4>High API Latency</h4>
+                        <span class="timestamp">2025-08-01 08:15</span>
+                    </div>
+                    <p class="alert-description">Average API response time exceeded threshold of 500ms for endpoint /api/v1/predict</p>
+                    <div class="alert-meta">
+                        <span class="alert-badge">Warning</span>
+                        <span class="alert-status active">Active</span>
+                    </div>
+                </div>
+                <div class="alert-actions">
+                    <button class="btn-small">Acknowledge</button>
+                    <button class="btn-small btn-outline">Details</button>
+                </div>
+            </div>
+            
+            <div class="alert-item info">
+                <div class="alert-icon">
+                    <i class="fas fa-info-circle"></i>
+                </div>
+                <div class="alert-content">
+                    <div class="alert-title">
+                        <h4>Model Version Update</h4>
+                        <span class="timestamp">2025-07-31 14:22</span>
+                    </div>
+                    <p class="alert-description">Price Prediction model was updated to version 2.1, showing 3.2% improvement in accuracy</p>
+                    <div class="alert-meta">
+                        <span class="alert-badge">Info</span>
+                        <span class="alert-status">Active</span>
+                    </div>
+                </div>
+                <div class="alert-actions">
+                    <button class="btn-small">Acknowledge</button>
+                    <button class="btn-small btn-outline">Details</button>
+                </div>
+            </div>
+            
+            <div class="alert-item success resolved">
+                <div class="alert-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="alert-content">
+                    <div class="alert-title">
+                        <h4>System Maintenance Complete</h4>
+                        <span class="timestamp">2025-07-30 02:45</span>
+                    </div>
+                    <p class="alert-description">Scheduled maintenance completed successfully. All services are operating normally.</p>
+                    <div class="alert-meta">
+                        <span class="alert-badge">Info</span>
+                        <span class="alert-status resolved">Resolved</span>
+                    </div>
+                </div>
+                <div class="alert-actions">
+                    <button class="btn-small btn-outline">Details</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Additional CSS styles for the monitoring page -->
+<style>
+    /* Dashboard summary */
+    .dashboard-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .metric-card {
+        background: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .metric-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .metric-icon.primary { background-color: rgba(79, 70, 229, 0.1); color: var(--primary); }
+    .metric-icon.success { background-color: rgba(16, 185, 129, 0.1); color: var(--success); }
+    .metric-icon.warning { background-color: rgba(245, 158, 11, 0.1); color: var(--warning); }
+    .metric-icon.info { background-color: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .metric-icon.danger { background-color: rgba(239, 68, 68, 0.1); color: var(--danger); }
+    
+    .metric-details {
+        flex-grow: 1;
+    }
+    
+    .metric-details h4 {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.25rem;
+        font-weight: 500;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .metric-change {
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
+    .metric-change.up { color: var(--success); }
+    .metric-change.down { color: var(--danger); }
+    
+    /* Filter bar */
+    .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+    }
+    
+    .filter-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .filter-group label {
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+    
+    /* Large chart container */
+    .chart-container.large {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--radius);
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow-sm);
+        height: 350px;
+    }
+    
+    /* Model metrics grid */
+    .model-metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .model-metric-card {
+        background: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .model-metric-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+    
+    .model-badge {
+        background: rgba(79, 70, 229, 0.1);
+        color: var(--primary);
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    /* Resource monitors */
+    .resource-monitors {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .resource-monitor {
+        background: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .resource-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .resource-header h4 {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .resource-value {
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+    
+    .resource-bar {
+        height: 8px;
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .resource-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--primary-light), var(--primary));
+        border-radius: 4px;
+    }
+    
+    /* Status badges */
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .status-badge.healthy {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+    }
+    
+    .status-badge.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+    }
+    
+    .status-badge.error {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+    }
+    
+    /* Metrics grid */
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .metric-detail-card {
+        background: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .metric-detail-header {
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Progress bar */
+    .progress-bar {
+        width: 100%;
+        height: 6px;
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: var(--success);
+        border-radius: 3px;
+    }
+    
+    /* Alerts list */
+    .alert-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+    }
+    
+    .alerts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .alert-item {
+        display: flex;
+        gap: 1rem;
+        background: white;
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-sm);
+        border-left: 4px solid transparent;
+    }
+    
+    .alert-item.warning { border-color: var(--warning); }
+    .alert-item.info { border-color: #3b82f6; }
+    .alert-item.error { border-color: var(--danger); }
+    .alert-item.success { border-color: var(--success); }
+    
+    .alert-item.resolved {
+        opacity: 0.7;
+    }
+    
+    .alert-icon {
+        font-size: 1.5rem;
+        color: var(--text-muted);
+    }
+    
+    .alert-item.warning .alert-icon { color: var(--warning); }
+    .alert-item.info .alert-icon { color: #3b82f6; }
+    .alert-item.error .alert-icon { color: var(--danger); }
+    .alert-item.success .alert-icon { color: var(--success); }
+    
+    .alert-content {
+        flex-grow: 1;
+    }
+    
+    .alert-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .alert-title h4 {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .timestamp {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+    
+    .alert-description {
+        margin-bottom: 1rem;
+        color: var(--text-secondary);
+    }
+    
+    .alert-meta {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .alert-badge {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text-secondary);
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .alert-status {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+        padding: 0.25rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .alert-status.resolved {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+    }
+    
+    .alert-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .btn-small {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border-radius: 50px;
+        font-weight: 500;
+        cursor: pointer;
+        background: var(--primary);
+        color: white;
+        border: none;
+        transition: var(--transition);
+    }
+    
+    .btn-small:hover {
+        background: var(--primary-dark);
+    }
+    
+    .btn-small.btn-outline {
+        background: transparent;
+        border: 1px solid var(--primary);
+        color: var(--primary);
+    }
+    
+    .btn-small.btn-outline:hover {
+        background: var(--primary);
+        color: white;
+    }
+    
+    /* Badge */
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        background: var(--danger);
+        color: white;
+        border-radius: 50%;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .dashboard-summary,
+        .model-metrics-grid,
+        .resource-monitors,
+        .metrics-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .chart-container.large {
+            height: 250px;
+        }
+        
+        .filter-bar,
+        .alert-filters {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .alert-item {
+            flex-direction: column;
+        }
+        
+        .alert-actions {
+            flex-direction: row;
+        }
+    }
+</style>

@@ -16,8 +16,10 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import time
 import threading
+import time
 import json
-import hashlib
+import os
+import uuid
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -352,9 +354,15 @@ class ModelServer:
         self.lock = threading.RLock()
         self.is_running = False
         
-        logger.info("ModelServer initialized", 
-                   max_concurrent_requests=self.config.max_concurrent_requests,
-                   request_timeout=self.config.request_timeout_seconds)
+        # Initialize A/B testing manager if available
+        if AB_TESTING_AVAILABLE:
+            self.ab_testing_manager = create_ab_testing_manager()
+        else:
+            self.ab_testing_manager = None
+        
+        logger.info("ModelServer initialized with config", 
+                   max_requests=self.config.max_concurrent_requests,
+                   timeout=self.config.request_timeout_seconds)
     
     def start(self):
         """Start the model server."""
@@ -630,21 +638,23 @@ class ModelServer:
                     'health_summary': self.health_checker.get_health_summary(),
                     'server_status': 'running'
                 }
-    
+                
     def get_metrics(self) -> Dict[str, Any]:
-        """Get server metrics."""
+        """Get serving metrics."""
         with self.lock:
-            total_requests = sum(stats.get('total_requests', 0) 
-                               for stats in self.request_stats.values())
+            # Collect metrics from all deployed models
+            total_requests = 0
+            successful_requests = 0
+            failed_requests = 0
+            avg_processing_times = []
             
-            successful_requests = sum(stats.get('successful_requests', 0) 
-                                    for stats in self.request_stats.values())
-            
-            failed_requests = sum(stats.get('failed_requests', 0) 
-                                for stats in self.request_stats.values())
-            
-            avg_processing_times = [stats.get('avg_processing_time_ms', 0) 
-                                  for stats in self.request_stats.values() if stats.get('avg_processing_time_ms', 0) > 0]
+            for key, stats in self.request_stats.items():
+                total_requests += stats.get('total_requests', 0)
+                successful_requests += stats.get('successful_requests', 0)
+                failed_requests += stats.get('failed_requests', 0)
+                
+                if stats.get('avg_processing_time_ms', 0) > 0:
+                    avg_processing_times.append(stats.get('avg_processing_time_ms', 0))
             
             return {
                 'total_requests': total_requests,
@@ -654,6 +664,223 @@ class ModelServer:
                 'avg_processing_time_ms': np.mean(avg_processing_times) if avg_processing_times else 0,
                 'deployed_models_count': len(self.deployed_models),
                 'health_summary': self.health_checker.get_health_summary()
+            }
+            
+    def create_ab_test(self, name: str, models: List[str], weights: Optional[List[float]] = None,
+                      min_sample_size: int = 1000, max_duration_days: int = 14, 
+                      metrics: Optional[List[str]] = None) -> bool:
+        """Create a new A/B test for comparing models.
+        
+        Args:
+            name: Test name
+            models: List of model names to compare
+            weights: Optional traffic weights for models
+            min_sample_size: Minimum sample size per variant
+            max_duration_days: Maximum test duration in days
+            metrics: Metrics to track
+            
+        Returns:
+            True if test creation succeeded, False otherwise
+        """
+        try:
+            # Check if AB testing is available
+            if not AB_TESTING_AVAILABLE:
+                logger.error("A/B testing functionality not available")
+                return False
+                
+            # Verify all models are deployed
+            for model_name in models:
+                model_found = False
+                for key in self.deployed_models:
+                    if key.startswith(f"{model_name}:"):
+                        model_found = True
+                        break
+                        
+                if not model_found:
+                    logger.error(f"Cannot create A/B test: Model {model_name} is not deployed")
+                    return False
+            
+            # Create test configuration using helper function from ab_testing module
+            from src.ab_testing import create_ab_test
+            test_config = create_ab_test(
+                name=name,
+                models=models,
+                weights=weights,
+                min_sample_size=min_sample_size,
+                max_duration_days=max_duration_days,
+                metrics=metrics or ["accuracy", "latency_ms", "business_impact"]
+            )
+            
+            # Create test
+            self.ab_testing_manager.create_test(test_config)
+            
+            logger.info("A/B test created", 
+                      test_name=name,
+                      models=models,
+                      weights=weights)
+                      
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to create A/B test: {e}")
+            return False
+            
+    def get_ab_test(self, test_name: str) -> Optional[Dict[str, Any]]:
+        """Get A/B test status and result.
+        
+        Args:
+            test_name: Test name
+            
+        Returns:
+            Test status and result if found, None otherwise
+        """
+        try:
+            # Check if AB testing is available
+            if not AB_TESTING_AVAILABLE:
+                logger.warning("A/B testing functionality not available")
+                return None
+                
+            result = self.ab_testing_manager.get_test_result(test_name)
+            
+            if not result:
+                return None
+                
+            return {
+                'name': result.test_name,
+                'status': result.status,
+                'start_time': result.start_time.isoformat(),
+                'end_time': result.end_time.isoformat() if result.end_time else None,
+                'sample_counts': result.sample_counts,
+                'metrics': result.metrics,
+                'winner': result.winner,
+                'confidence': result.confidence
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to get A/B test: {e}")
+            return None
+            
+    def list_ab_tests(self) -> Dict[str, Dict[str, Any]]:
+        """List all A/B tests.
+        
+        Returns:
+            Dictionary mapping test names to their summary
+        """
+        try:
+            # Check if AB testing is available
+            if not AB_TESTING_AVAILABLE:
+                logger.warning("A/B testing functionality not available")
+                return {}
+                
+            return self.ab_testing_manager.list_tests()
+            
+        except Exception as e:
+            logger.error(f"Failed to list A/B tests: {e}")
+            return {}
+            
+    def stop_ab_test(self, test_name: str) -> Optional[Dict[str, Any]]:
+        """Stop an A/B test.
+        
+        Args:
+            test_name: Test name
+            
+        Returns:
+            Final test result if test was found and stopped, None otherwise
+        """
+        try:
+            # Check if AB testing is available
+            if not AB_TESTING_AVAILABLE:
+                logger.warning("A/B testing functionality not available")
+                return None
+                
+            result = self.ab_testing_manager.stop_test(test_name)
+            
+            if not result:
+                return None
+                
+            return {
+                'name': result.test_name,
+                'status': result.status,
+                'winner': result.winner,
+                'confidence': result.confidence,
+                'metrics': result.metrics,
+                'sample_counts': result.sample_counts
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to stop A/B test: {e}")
+            return None
+            
+    def get_prediction_with_ab_test(self, test_name: str, user_id: str, features: pd.DataFrame) -> Dict[str, Any]:
+        """Get a prediction using an A/B test variant.
+        
+        Args:
+            test_name: Test name
+            user_id: User identifier for consistent assignment
+            features: Features for prediction
+            
+        Returns:
+            Prediction result and variant information
+        """
+        try:
+            # Check if AB testing is available
+            if not AB_TESTING_AVAILABLE:
+                logger.warning("A/B testing functionality not available")
+                return self.predict(model_name="default", features=features)
+            
+            # Get variant assignment for user
+            variant = self.ab_testing_manager.get_assignment(test_name, user_id)
+            
+            if not variant:
+                logger.warning(f"No variant assigned for test {test_name} and user {user_id}")
+                return {
+                    'status': 'error',
+                    'error': f"No variant assigned for test {test_name}",
+                    'timestamp': datetime.now().isoformat()
+                }
+            
+            # Make prediction using assigned model
+            model_name = variant.model_name
+            start_time = time.time()
+            result = self.predict(model_name=model_name, features=features)
+            processing_time_ms = (time.time() - start_time) * 1000
+            
+            # Record prediction for A/B test analysis
+            test = self.ab_testing_manager.get_test(test_name)
+            if test:
+                from src.prediction_engine import PredictionResponse
+                # Create a basic PredictionResponse object to record
+                response = PredictionResponse(
+                    request_id=str(uuid.uuid4()),
+                    model_name=model_name,
+                    predictions=result.get('predictions', []),
+                    latency_ms=processing_time_ms,
+                    timestamp=datetime.now()
+                )
+                test.record_prediction(variant.name, response)
+            
+            # Return prediction with variant info
+            logger.info("Adding variant information to prediction result", 
+                       variant=variant.name, 
+                       model=variant.model_name,
+                       test_name=test_name)
+            
+            # Create a new dictionary with all information to avoid modifying the original result
+            response = dict(result)
+            response['variant'] = variant.name
+            response['ab_test'] = test_name
+            
+            # Log the response keys to verify variant is included
+            logger.debug(f"Response keys: {list(response.keys())}")
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Failed to get prediction with A/B test: {e}")
+            return {
+                'status': 'error',
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
             }
 
 

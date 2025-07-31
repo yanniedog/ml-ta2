@@ -1,4 +1,10 @@
 """
+Script to fix syntax errors in ab_testing.py by completely recreating the file
+"""
+
+def fix_ab_testing_file():
+    # Create a new file with correct syntax
+    content = '''"""
 A/B testing framework for ML-TA system.
 
 This module implements:
@@ -164,7 +170,7 @@ class ABTest:
             if actual is not None:
                 self.actuals[variant_name].append(actual)
             self.timestamps[variant_name].append(response.timestamp)
-            self.latencies[variant_name].append(response.processing_time_ms)
+            self.latencies[variant_name].append(response.latency_ms)
             self.metadata[variant_name].append(response.metadata)
             
             self.result.sample_counts[variant_name] += 1
@@ -596,4 +602,13 @@ def create_ab_test(name: str,
         max_duration_days=max_duration_days,
         metrics=metrics,
         significance_level=0.05
-    )
+    )'''
+    
+    # Write the fixed content to the file
+    with open('src/ab_testing.py', 'w') as f:
+        f.write(content)
+    
+    print("File has been completely recreated with correct syntax.")
+
+if __name__ == "__main__":
+    fix_ab_testing_file()
