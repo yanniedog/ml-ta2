@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML-TA Trading Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Navigation Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <h1>ML-TA Trading Assistant</h1>
+                </div>
+                <div class="system-status" id="systemStatus">
+                    <span class="status-indicator" id="statusIndicator"></span>
+                    <span id="statusText">Checking...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Welcome Section -->
+            <section class="welcome-section">
+                <div class="welcome-content">
+                    <h2>Welcome to Your AI Trading Assistant</h2>
+                    <p>Get intelligent trading predictions and market analysis with our advanced machine learning system. No coding required!</p>
+                </div>
+            </section>
+
+            <!-- Quick Actions -->
+            <section class="quick-actions">
+                <div class="action-grid">
+                    <div class="action-card" onclick="showPredictionPanel()">
+                        <div class="action-icon">
+                            <i class="fas fa-crystal-ball"></i>
+                        </div>
+                        <h3>Get Prediction</h3>
+                        <p>Analyze market data and get AI-powered trading predictions</p>
+                        <button class="action-btn">Start Analysis</button>
+                    </div>
+                    
+                    <div class="action-card" onclick="showModelsPanel()">
+                        <div class="action-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h3>View Models</h3>
+                        <p>Explore available AI models and their performance metrics</p>
+                        <button class="action-btn">View Models</button>
+                    </div>
+                    
+                    <div class="action-card" onclick="showHistoryPanel()">
+                        <div class="action-icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <h3>Prediction History</h3>
+                        <p>Review your past predictions and their accuracy</p>
+                        <button class="action-btn">View History</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Prediction Panel -->
+            <section class="panel prediction-panel" id="predictionPanel" style="display: none;">
+                <div class="panel-header">
+                    <h3><i class="fas fa-crystal-ball"></i> Trading Prediction</h3>
+                    <button class="close-btn" onclick="closePredictionPanel()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="prediction-form">
+                        <div class="form-section">
+                            <h4>Market Data Input</h4>
+                            <p class="form-description">Enter the market indicators you want to analyze:</p>
+                            
+                            <div class="input-group">
+                                <label for="symbol">Trading Symbol</label>
+                                <select id="symbol" class="form-input">
+                                    <option value="BTC/USDT">Bitcoin (BTC/USDT)</option>
+                                    <option value="ETH/USDT">Ethereum (ETH/USDT)</option>
+                                    <option value="ADA/USDT">Cardano (ADA/USDT)</option>
+                                    <option value="SOL/USDT">Solana (SOL/USDT)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <label for="price">Current Price</label>
+                                    <input type="number" id="price" class="form-input" placeholder="e.g., 45000" step="0.01">
+                                </div>
+                                <div class="input-group">
+                                    <label for="volume">24h Volume</label>
+                                    <input type="number" id="volume" class="form-input" placeholder="e.g., 1000000" step="1">
+                                </div>
+                            </div>
+                            
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <label for="rsi">RSI (0-100)</label>
+                                    <input type="number" id="rsi" class="form-input" placeholder="e.g., 65" min="0" max="100">
+                                </div>
+                                <div class="input-group">
+                                    <label for="macd">MACD</label>
+                                    <input type="number" id="macd" class="form-input" placeholder="e.g., 0.5" step="0.01">
+                                </div>
+                            </div>
+                            
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <label for="bollinger">Bollinger Band %</label>
+                                    <input type="number" id="bollinger" class="form-input" placeholder="e.g., 0.8" step="0.01">
+                                </div>
+                                <div class="input-group">
+                                    <label for="sentiment">Market Sentiment (1-10)</label>
+                                    <input type="number" id="sentiment" class="form-input" placeholder="e.g., 7" min="1" max="10">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="makePrediction()" id="predictBtn">
+                                <i class="fas fa-magic"></i> Get Prediction
+                            </button>
+                            <button class="btn btn-secondary" onclick="clearForm()">
+                                <i class="fas fa-undo"></i> Clear Form
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Prediction Results -->
+                    <div class="prediction-results" id="predictionResults" style="display: none;">
+                        <div class="results-header">
+                            <h4><i class="fas fa-chart-line"></i> Prediction Results</h4>
+                        </div>
+                        <div class="results-content" id="resultsContent">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Models Panel -->
+            <section class="panel models-panel" id="modelsPanel" style="display: none;">
+                <div class="panel-header">
+                    <h3><i class="fas fa-brain"></i> AI Models</h3>
+                    <button class="close-btn" onclick="closeModelsPanel()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="models-grid" id="modelsGrid">
+                        <!-- Models will be populated here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- History Panel -->
+            <section class="panel history-panel" id="historyPanel" style="display: none;">
+                <div class="panel-header">
+                    <h3><i class="fas fa-history"></i> Prediction History</h3>
+                    <button class="close-btn" onclick="closeHistoryPanel()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="panel-content">
+                    <div class="history-content" id="historyContent">
+                        <div class="empty-state">
+                            <i class="fas fa-clock"></i>
+                            <h4>No predictions yet</h4>
+                            <p>Your prediction history will appear here once you start making predictions.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+            <div class="loading-content">
+                <div class="spinner"></div>
+                <p>Processing your request...</p>
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div class="toast" id="toast">
+            <div class="toast-content">
+                <span class="toast-icon" id="toastIcon"></span>
+                <span class="toast-message" id="toastMessage"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

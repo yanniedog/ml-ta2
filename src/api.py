@@ -21,7 +21,7 @@ warnings.filterwarnings('ignore')
 
 # Core libraries
 try:
-    from flask import Flask, request, jsonify, g
+    from flask import Flask, request, jsonify, g, send_from_directory
     from flask_cors import CORS
     FLASK_AVAILABLE = True
 except ImportError:
@@ -38,6 +38,7 @@ except ImportError:
         def __init__(self, app): pass
     
     def jsonify(data): return {"data": data}
+    def send_from_directory(directory, filename): return f"Mock file: {filename}"
     
     class request:
         @staticmethod
@@ -315,8 +316,16 @@ class MLTA_API:
     def __init__(self, config: Optional[APIConfig] = None):
         """Initialize API application."""
         self.config = config or APIConfig()
-        self.app = Flask(__name__)
-        self.app.config['SECRET_KEY'] = self.config.secret_key
+        
+        # Initialize Flask app with static file configuration
+        if FLASK_AVAILABLE:
+            import os
+            static_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')
+            self.app = Flask(__name__, static_folder=static_folder, static_url_path='/static')
+            self.app.config['SECRET_KEY'] = self.config.secret_key
+        else:
+            self.app = Flask(__name__)
+            self.app.config['SECRET_KEY'] = self.config.secret_key
         
         # Initialize components
         self.auth_manager = AuthManager(self.config.secret_key)
@@ -574,6 +583,24 @@ class MLTA_API:
                 logger.error(f"Metrics API error: {e}")
                 return jsonify({"error": "Internal server error"}), 500
         
+        # Web Frontend Routes
+        @self.app.route('/', methods=['GET'])
+        def web_frontend():
+            """Serve the web frontend."""
+            try:
+                from web_frontend import get_embedded_frontend
+                return get_embedded_frontend()
+            except ImportError:
+                return self._get_fallback_frontend()
+        
+        @self.app.route('/static/<path:filename>', methods=['GET'])
+        def static_files(filename):
+            """Serve static files."""
+            try:
+                return send_from_directory('static', filename)
+            except Exception as e:
+                return f"Static file not found: {filename}", 404
+
         # API documentation endpoint
         @self.app.route(f'/api/{self.config.api_version}/docs', methods=['GET'])
         def api_docs():
@@ -630,6 +657,36 @@ class MLTA_API:
             }
             
             return jsonify(docs)
+        
+        # Frontend API Keys endpoint (for demo purposes)
+        @self.app.route(f'/api/{self.config.api_version}/demo-keys', methods=['GET'])
+        def get_demo_keys():
+            """Get demo API keys for frontend testing."""
+            # Get the default users created during initialization
+            admin_user = None
+            test_user = None
+            
+            for user in self.auth_manager.users.values():
+                if user.role == 'admin':
+                    admin_user = user
+                elif user.role == 'user':
+                    test_user = user
+            
+            return jsonify({
+                "demo_keys": {
+                    "admin": {
+                        "api_key": admin_user.api_key if admin_user else "not_found",
+                        "username": admin_user.username if admin_user else "admin",
+                        "role": "admin"
+                    },
+                    "user": {
+                        "api_key": test_user.api_key if test_user else "not_found",
+                        "username": test_user.username if test_user else "testuser", 
+                        "role": "user"
+                    }
+                },
+                "note": "These are demo keys for testing the web interface. In production, users would register and get their own keys."
+            })
     
     def start(self):
         """Start the API server."""

@@ -1,0 +1,353 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-ta-api
+  namespace: ml-ta
+  labels:
+    app: ml-ta-api
+    component: api
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: ml-ta-api
+  template:
+    metadata:
+      labels:
+        app: ml-ta-api
+        component: api
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: ml-ta-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: ml-ta-api
+        image: ghcr.io/ml-ta/ml-ta:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 8081
+          name: metrics
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: ml-ta-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: ml-ta-secrets
+              key: redis-url
+        - name: BINANCE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ml-ta-secrets
+              key: binance-api-key
+        - name: BINANCE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ml-ta-secrets
+              key: binance-secret-key
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ml-ta-secrets
+              key: jwt-secret-key
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/v1/ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: model-storage
+          mountPath: /app/models
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: config-volume
+        configMap:
+          name: ml-ta-config
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: ml-ta-models-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: ml-ta-logs-pvc
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      tolerations:
+      - key: "ml-workload"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - ml-ta-api
+              topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-ta-worker
+  namespace: ml-ta
+  labels:
+    app: ml-ta-worker
+    component: worker
+    version: v1
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: ml-ta-worker
+  template:
+    metadata:
+      labels:
+        app: ml-ta-worker
+        component: worker
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8082"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: ml-ta-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: ml-ta-worker
+        image: ghcr.io/ml-ta/ml-ta:latest
+        imagePullPolicy: Always
+        command: ["python", "-m", "src.worker"]
+        ports:
+        - containerPort: 8082
+          name: metrics
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: WORKER_TYPE
+          value: "ml_worker"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: ml-ta-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: ml-ta-secrets
+              key: redis-url
+        - name: BINANCE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ml-ta-secrets
+              key: binance-api-key
+        - name: BINANCE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: ml-ta-secrets
+              key: binance-secret-key
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8082
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8082
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: model-storage
+          mountPath: /app/models
+        - name: data-storage
+          mountPath: /app/data
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: config-volume
+        configMap:
+          name: ml-ta-config
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: ml-ta-models-pvc
+      - name: data-storage
+        persistentVolumeClaim:
+          claimName: ml-ta-data-pvc
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: ml-ta-logs-pvc
+      nodeSelector:
+        kubernetes.io/arch: amd64
+        node-type: compute-optimized
+      tolerations:
+      - key: "ml-workload"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-ta-scheduler
+  namespace: ml-ta
+  labels:
+    app: ml-ta-scheduler
+    component: scheduler
+    version: v1
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ml-ta-scheduler
+  template:
+    metadata:
+      labels:
+        app: ml-ta-scheduler
+        component: scheduler
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8083"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: ml-ta-service-account
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: ml-ta-scheduler
+        image: ghcr.io/ml-ta/ml-ta:latest
+        imagePullPolicy: Always
+        command: ["python", "-m", "src.scheduler"]
+        ports:
+        - containerPort: 8083
+          name: metrics
+        env:
+        - name: ENVIRONMENT
+          value: "production"
+        - name: SCHEDULER_TYPE
+          value: "main_scheduler"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: ml-ta-secrets
+              key: database-url
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: ml-ta-secrets
+              key: redis-url
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8083
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8083
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+        - name: logs-volume
+          mountPath: /app/logs
+      volumes:
+      - name: config-volume
+        configMap:
+          name: ml-ta-config
+      - name: logs-volume
+        persistentVolumeClaim:
+          claimName: ml-ta-logs-pvc
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      tolerations:
+      - key: "ml-workload"
+        operator: "Equal"
+        value: "true"
+        effect: "NoSchedule"

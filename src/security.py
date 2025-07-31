@@ -42,6 +42,8 @@ class ComplianceStandard(Enum):
     PCI_DSS = "pci_dss"
     HIPAA = "hipaa"
     ISO27001 = "iso27001"
+    MIFID_II = "mifid_ii"
+    SOX = "sox"
 
 
 @dataclass

@@ -364,21 +364,31 @@ class MLPipelineE2ETest:
     
     def _prepare_ml_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Prepare training and test data."""
-        # Generate synthetic training data
+        # Generate synthetic training data with predictable patterns
         np.random.seed(42)
         n_samples = 1000
         
-        # Features
+        # Generate base price trend
+        trend = np.linspace(0, 1, n_samples)
+        noise = np.random.normal(0, 0.1, n_samples)
+        
+        # Features with correlations to target
         features = {
-            'price': np.random.normal(50000, 5000, n_samples),
-            'volume': np.random.exponential(1000, n_samples),
-            'rsi': np.random.uniform(0, 100, n_samples),
-            'sma_ratio': np.random.normal(1, 0.1, n_samples),
-            'volatility': np.random.exponential(0.02, n_samples)
+            'price': 50000 + trend * 10000 + noise * 1000,
+            'volume': 1000 + trend * 500 + np.random.exponential(200, n_samples),
+            'rsi': 30 + trend * 40 + np.random.normal(0, 10, n_samples),
+            'sma_ratio': 0.95 + trend * 0.1 + np.random.normal(0, 0.02, n_samples),
+            'volatility': 0.01 + (1-trend) * 0.03 + np.random.exponential(0.005, n_samples)
         }
         
-        # Target (price direction: 1 for up, 0 for down)
-        target = np.random.binomial(1, 0.52, n_samples)  # Slightly bullish bias
+        # Create target based on features for better predictability
+        rsi_signal = (features['rsi'] > 50).astype(int)
+        trend_signal = (features['sma_ratio'] > 1.0).astype(int)
+        volume_signal = (features['volume'] > np.median(features['volume'])).astype(int)
+        
+        # Combine signals with some noise
+        target_prob = (rsi_signal + trend_signal + volume_signal) / 3
+        target = np.random.binomial(1, np.clip(target_prob, 0.2, 0.8), n_samples)
         
         data = pd.DataFrame(features)
         data['target'] = target
