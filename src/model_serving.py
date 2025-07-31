@@ -37,6 +37,13 @@ except ImportError:
 from src.config import get_config
 from src.logging_config import get_logger
 from src.prediction_engine import PredictionEngine, PredictionRequest, PredictionResponse
+try:
+    from src.ab_testing import ABTestingManager, create_ab_testing_manager
+    AB_TESTING_AVAILABLE = True
+except ImportError:
+    AB_TESTING_AVAILABLE = False
+    def create_ab_testing_manager():
+        return None
 
 logger = get_logger(__name__)
 
