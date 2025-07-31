@@ -185,6 +185,32 @@ class ModelTrainingError(MLTAException):
         self.model_type = model_type
 
 
+class OptimizationError(MLTAException):
+    """Exception for hyperparameter optimization failures."""
+    
+    def __init__(self, message: str, optimizer: str = "unknown", **kwargs):
+        super().__init__(
+            message,
+            error_code="OPTIMIZATION_ERROR",
+            category=ErrorCategory.MODEL,
+            **kwargs
+        )
+        self.optimizer = optimizer
+
+
+class ModelAnalysisError(MLTAException):
+    """Exception for model analysis and interpretability failures."""
+    
+    def __init__(self, message: str, model_type: str = "unknown", **kwargs):
+        super().__init__(
+            message,
+            error_code="MODEL_ANALYSIS_ERROR",
+            category=ErrorCategory.MODEL,
+            **kwargs
+        )
+        self.model_type = model_type
+
+
 class PredictionError(MLTAException):
     """Exception for prediction failures."""
     
