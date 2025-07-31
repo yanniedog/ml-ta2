@@ -75,6 +75,12 @@ class StatisticalDriftDetector:
         """
         self.reference_distributions = {}
         
+        # Filter out datetime columns to prevent DatetimeArray reduction errors
+        datetime_cols = [col for col in X.columns if pd.api.types.is_datetime64_any_dtype(X[col])]
+        if datetime_cols:
+            self.logger.warning(f"Skipping datetime columns in drift detection: {datetime_cols}")
+            X = X.drop(columns=datetime_cols)
+        
         if feature_types is None:
             # Auto-detect feature types
             feature_types = self._detect_feature_types(X)
@@ -123,10 +129,16 @@ class StatisticalDriftDetector:
             Dictionary containing drift detection results
         """
         if not self.reference_distributions:
-            raise ValueError("Reference distributions not fitted. Call fit_reference() first.")
-        
+            raise ValueError("No reference distributions available. Call fit_reference() first.")
+            
         if timestamp is None:
             timestamp = datetime.now()
+        
+        # Filter out datetime columns to prevent DatetimeArray reduction errors
+        datetime_cols = [col for col in X.columns if pd.api.types.is_datetime64_any_dtype(X[col])]
+        if datetime_cols:
+            self.logger.warning(f"Skipping datetime columns in drift detection: {datetime_cols}")
+            X = X.drop(columns=datetime_cols)
         
         drift_results = {
             'timestamp': timestamp,
@@ -395,7 +407,8 @@ class FeatureMonitor:
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize feature monitor."""
-        self.config = config or get_config().features.dict()
+        from .config import get_model_dict
+        self.config = config or get_model_dict(get_config().features)
         self.logger = logger.bind(component="feature_monitor")
         
         # Initialize detectors
@@ -432,6 +445,14 @@ class FeatureMonitor:
         """
         self.logger.info("Starting feature monitoring")
         
+        # Filter out non-numeric columns (string/object) to prevent conversion errors
+        string_cols = [col for col in reference_data.columns if reference_data[col].dtype == 'object' or 
+                      (hasattr(reference_data[col], 'dtype') and str(reference_data[col].dtype).startswith('string'))]  
+                      
+        if string_cols:
+            self.logger.warning(f"Excluding string/categorical columns from feature monitoring: {string_cols}")
+            reference_data = reference_data.drop(columns=string_cols).copy()
+        
         # Fit reference distributions
         self.statistical_detector.fit_reference(reference_data, feature_types)
         
@@ -465,10 +486,25 @@ class FeatureMonitor:
         if timestamp is None:
             timestamp = datetime.now()
         
-        self.logger.info(f"Monitoring batch", records=len(data), timestamp=timestamp)
+        # Additional safeguard: remove datetime columns at this level too to prevent DatetimeArray reduction errors
+        datetime_cols = [col for col in data.columns if pd.api.types.is_datetime64_any_dtype(data[col])]
+        
+        # Also filter out string/object columns to prevent string-to-float conversion errors
+        string_cols = [col for col in data.columns if data[col].dtype == 'object' or 
+                      (hasattr(data[col], 'dtype') and str(data[col].dtype).startswith('string'))]
+        
+        columns_to_remove = list(set(datetime_cols + string_cols))
+        
+        if columns_to_remove:
+            self.logger.warning(f"Excluding non-numeric columns from feature monitoring: {columns_to_remove}")
+            monitoring_data = data.drop(columns=columns_to_remove).copy()
+        else:
+            monitoring_data = data.copy()
+        
+        self.logger.info(f"Monitoring batch", records=len(monitoring_data), timestamp=timestamp)
         
         # Statistical drift detection
-        statistical_results = self.statistical_detector.detect_drift(data, timestamp)
+        statistical_results = self.statistical_detector.detect_drift(monitoring_data, timestamp)
         
         # Performance drift detection
         performance_results = {}

@@ -9,6 +9,8 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List, Optional, Any, Union, Tuple
 from datetime import datetime, timedelta
+from enum import Enum
+from dataclasses import dataclass, field
 import json
 
 # Handle optional dependencies gracefully

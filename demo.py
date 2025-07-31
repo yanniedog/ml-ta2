@@ -42,7 +42,8 @@ class MLTADemo:
     
     def _setup_directories(self):
         """Setup required directories."""
-        for path_name, path_value in self.config.paths.dict().items():
+        from src.config import get_model_dict
+        for path_name, path_value in get_model_dict(self.config.paths).items():
             ensure_directory(path_value)
             self.logger.info(f"Directory ensured: {path_value}")
     

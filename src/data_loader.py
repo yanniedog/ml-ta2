@@ -9,10 +9,12 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List, Optional, Any, Union, Iterator, Tuple
 from datetime import datetime, timedelta
+from enum import Enum
 from pathlib import Path
 import json
 import hashlib
 import sqlite3
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 # Handle optional dependencies gracefully
@@ -356,7 +358,8 @@ class DataLoader:
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize data loader."""
-        self.config = config or get_config().dict()
+        from .config import get_model_dict
+        self.config = config or get_model_dict(get_config())
         self.logger = logger.bind(component="data_loader")
         
         # Initialize components

@@ -273,7 +273,32 @@ class UnivariateSelector:
         Returns:
             Self for method chaining
         """
-        score_func = self._get_score_function()
+        # Handle fallback if scikit-learn is not available
+        if not SKLEARN_AVAILABLE:
+            self.selected_features = list(X.columns[:self.k])
+            return self
+        
+        # Filter out datetime columns to avoid DatetimeArray reduction errors
+        datetime_cols = [col for col in X.columns if pd.api.types.is_datetime64_any_dtype(X[col])]
+        if datetime_cols:
+            self.logger.warning(f"Excluding datetime columns from univariate feature selection: {datetime_cols}")
+            X = X.drop(columns=datetime_cols)
+        
+        # Choose score function
+        if self.score_func == 'mutual_info':
+            if self.task_type == 'classification':
+                score_func = mutual_info_classif
+            else:
+                score_func = mutual_info_regression
+        elif self.score_func == 'f_test':
+            if self.task_type == 'classification':
+                score_func = f_classif
+            else:
+                score_func = f_regression
+        elif self.score_func == 'chi2':
+            score_func = chi2
+        else:
+            raise ValueError(f"Unknown score function: {self.score_func}")
         
         # Create selector based on mode
         if self.selection_mode == 'k_best':
@@ -395,6 +420,12 @@ class TreeBasedSelector:
                 n_jobs=-1
             )
         
+        # Filter out datetime columns to avoid DatetimeArray reduction errors
+        datetime_cols = [col for col in X.columns if pd.api.types.is_datetime64_any_dtype(X[col])]
+        if datetime_cols:
+            self.logger.warning(f"Excluding datetime columns from tree-based feature selection: {datetime_cols}")
+            X = X.drop(columns=datetime_cols)
+            
         # Handle missing values
         X_clean = X.fillna(0)
         X_clean = X_clean.replace([np.inf, -np.inf], 0)
@@ -566,7 +597,8 @@ class FeatureSelector:
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize feature selector with configuration."""
-        self.config = config or get_config().features.dict()
+        from .config import get_model_dict
+        self.config = config or get_model_dict(get_config().features)
         self.logger = logger.bind(component="feature_selector")
         
         # Initialize selectors
@@ -589,7 +621,20 @@ class FeatureSelector:
         """
         self.logger.info(f"Starting feature selection", features=X.shape[1], task_type=task_type)
         
-        current_X = X.copy()
+        # Preemptively remove datetime columns from the entire feature selection process
+        datetime_cols = [col for col in X.columns if pd.api.types.is_datetime64_any_dtype(X[col])]
+        
+        # Also identify and remove string/object columns that can't be converted to float
+        string_cols = [col for col in X.columns if X[col].dtype == 'object' or 
+                      (hasattr(X[col], 'dtype') and str(X[col].dtype).startswith('string'))]
+        
+        columns_to_remove = list(set(datetime_cols + string_cols))
+        
+        if columns_to_remove:
+            self.logger.warning(f"Removing non-numeric columns from feature selection: {columns_to_remove}")
+            current_X = X.drop(columns=columns_to_remove).copy()
+        else:
+            current_X = X.copy()
         
         # Step 1: Remove low-variance features
         if self.config.get('use_variance_selection', True):

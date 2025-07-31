@@ -13,7 +13,7 @@ import pickle
 import json
 import time
 from pathlib import Path
-from typing import Dict, Any, Optional, Union, List
+from typing import Dict, Any, Optional, Union, List, Tuple
 from datetime import datetime
 import pandas as pd
 import numpy as np

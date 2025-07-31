@@ -183,7 +183,8 @@ class StructuredLogger:
     def __init__(self, name: str, config: Optional[Dict[str, Any]] = None):
         """Initialize structured logger."""
         self.name = name
-        self.config = config or get_config().monitoring.dict()
+        from .config import get_model_dict
+        self.config = config or get_model_dict(get_config().monitoring)
         self.correlation_processor = CorrelationIDProcessor()
         self.performance_processor = PerformanceProcessor()
         self.security_processor = SecurityProcessor()

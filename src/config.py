@@ -13,7 +13,14 @@ from typing import Dict, Any, Optional, Union
 
 # Handle optional dependencies gracefully
 try:
-    from pydantic import BaseModel, Field, validator
+    from pydantic import BaseModel, Field
+    # Handle Pydantic v1 vs v2 compatibility
+    try:
+        from pydantic import validator
+        PYDANTIC_V1 = True
+    except ImportError:
+        from pydantic import field_validator as validator
+        PYDANTIC_V1 = False
     PYDANTIC_AVAILABLE = True
 except ImportError:
     # Fallback for when pydantic is not available
@@ -24,6 +31,9 @@ except ImportError:
         
         def dict(self):
             return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+        
+        def model_dump(self):
+            return self.dict()
     
     def Field(**kwargs):
         return None
@@ -34,6 +44,19 @@ except ImportError:
         return decorator
     
     PYDANTIC_AVAILABLE = False
+    PYDANTIC_V1 = True
+
+
+def get_model_dict(model):
+    """Get dictionary representation of Pydantic model, compatible with v1 and v2."""
+    if hasattr(model, 'model_dump'):
+        return model.model_dump()
+    elif hasattr(model, 'dict'):
+        return model.dict()
+    else:
+        # Fallback for non-Pydantic objects
+        return model.__dict__ if hasattr(model, '__dict__') else {}
+
 
 try:
     from cryptography.fernet import Fernet
@@ -193,7 +216,7 @@ class ConfigValidator:
             datetime.strptime(config.data.end_date, "%Y-%m-%d")
             
             # Validate paths exist or can be created
-            for path_name, path_value in config.paths.dict().items():
+            for path_name, path_value in get_model_dict(config.paths).items():
                 path_obj = Path(path_value)
                 path_obj.mkdir(parents=True, exist_ok=True)
             
@@ -377,7 +400,7 @@ class ConfigManager:
             self.load_config()
         
         # Apply updates and track changes
-        config_dict = self._config.dict()
+        config_dict = get_model_dict(self._config)
         for key, value in updates.items():
             old_value = config_dict.get(key)
             config_dict[key] = value

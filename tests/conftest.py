@@ -19,7 +19,10 @@ from unittest.mock import Mock, MagicMock
 import sqlite3
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Add project root to path for consistent imports
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
 
 from src.config import ConfigManager, MLTAConfig
 from src.logging_config import LoggerFactory
@@ -406,7 +409,8 @@ def setup_test_environment(test_config: MLTAConfig, temp_dir: Path):
     np.random.seed(42)
     
     # Create test directories
-    for path_name, path_value in test_config.paths.dict().items():
+    from src.config import get_model_dict
+    for path_name, path_value in get_model_dict(test_config.paths).items():
         test_path = temp_dir / path_value.lstrip('./')
         test_path.mkdir(parents=True, exist_ok=True)
     

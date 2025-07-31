@@ -12,7 +12,8 @@ import requests
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any, Union, Tuple
+from pathlib import Path
 from urllib.parse import urlencode
 import json
 
@@ -441,7 +442,8 @@ class BinanceDataFetcher:
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize Binance data fetcher."""
-        self.config = config or get_config().binance.dict()
+        from .config import get_model_dict
+        self.config = config or get_model_dict(get_config().binance)
         self.logger = logger.bind(component="binance_fetcher")
         
         # Initialize components

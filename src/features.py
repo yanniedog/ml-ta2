@@ -239,6 +239,11 @@ class RollingFeatures:
         for col in columns:
             if col not in df.columns:
                 continue
+                
+            # Skip datetime columns to avoid DatetimeArray reduction errors
+            if pd.api.types.is_datetime64_any_dtype(df[col]):
+                self.logger.warning(f"Skipping rolling statistics for datetime column: {col}")
+                continue
             
             for window in windows:
                 rolling_obj = df[col].rolling(window=window)
@@ -285,6 +290,11 @@ class RollingFeatures:
         for col in columns:
             if col not in df.columns:
                 continue
+                
+            # Skip datetime columns to avoid DatetimeArray reduction errors
+            if pd.api.types.is_datetime64_any_dtype(df[col]):
+                self.logger.warning(f"Skipping expanding features for datetime column: {col}")
+                continue
             
             expanding_obj = df[col].expanding()
             
@@ -329,9 +339,19 @@ class InteractionFeatures:
         for num_col in numerator_cols:
             if num_col not in df.columns:
                 continue
+                
+            # Skip datetime columns to avoid DatetimeArray reduction errors
+            if pd.api.types.is_datetime64_any_dtype(df[num_col]):
+                self.logger.warning(f"Skipping ratio features for datetime column: {num_col}")
+                continue
             
             for den_col in denominator_cols:
                 if den_col not in df.columns or num_col == den_col:
+                    continue
+                    
+                # Skip datetime columns to avoid DatetimeArray reduction errors
+                if pd.api.types.is_datetime64_any_dtype(df[den_col]):
+                    self.logger.warning(f"Skipping ratio features for datetime column: {den_col}")
                     continue
                 
                 ratio_col_name = f"{num_col}_div_{den_col}"
@@ -366,6 +386,11 @@ class InteractionFeatures:
         
         for col1, col2 in column_pairs:
             if col1 in df.columns and col2 in df.columns:
+                # Skip datetime columns to avoid DatetimeArray reduction errors
+                if pd.api.types.is_datetime64_any_dtype(df[col1]) or pd.api.types.is_datetime64_any_dtype(df[col2]):
+                    self.logger.warning(f"Skipping product features for datetime columns: {col1} or {col2}")
+                    continue
+                    
                 product_col_name = f"{col1}_mult_{col2}"
                 result_df[product_col_name] = df[col1] * df[col2]
         
@@ -397,6 +422,11 @@ class InteractionFeatures:
         
         for col in columns:
             if col not in df.columns:
+                continue
+                
+            # Skip datetime columns to avoid DatetimeArray reduction errors
+            if pd.api.types.is_datetime64_any_dtype(df[col]):
+                self.logger.warning(f"Skipping polynomial features for datetime column: {col}")
                 continue
             
             for degree in degrees:
@@ -532,29 +562,48 @@ class SeasonalFeatures:
         
         dt = result_df[timestamp_col]
         
-        # Basic time features
-        result_df['hour'] = dt.dt.hour
-        result_df['day_of_week'] = dt.dt.dayofweek
-        result_df['day_of_month'] = dt.dt.day
-        result_df['month'] = dt.dt.month
-        result_df['quarter'] = dt.dt.quarter
-        result_df['year'] = dt.dt.year
+        # Extract time components - handle pandas datetime attributes safely
+        result_df['hour'] = dt.dt.hour.astype('int64')
+        result_df['day_of_week'] = dt.dt.dayofweek.astype('int64')
+        result_df['day_of_month'] = dt.dt.day.astype('int64')
         
-        # Cyclical encoding for periodic features
+        # Safe handling for isocalendar week which can cause DatetimeArray reduction issues
+        try:
+            # Handle pandas >= 1.1.0 where isocalendar returns a DataFrame
+            if hasattr(dt.dt, 'isocalendar') and callable(getattr(dt.dt, 'isocalendar')):
+                iso_calendar = dt.dt.isocalendar()
+                if hasattr(iso_calendar, 'week'):
+                    result_df['week_of_year'] = iso_calendar.week.astype('int64')
+                elif isinstance(iso_calendar, pd.DataFrame) and 'week' in iso_calendar.columns:
+                    result_df['week_of_year'] = iso_calendar['week'].astype('int64')
+                else:
+                    # Fallback for older pandas versions
+                    result_df['week_of_year'] = dt.dt.week.astype('int64') if hasattr(dt.dt, 'week') else dt.apply(lambda x: x.isocalendar()[1]).astype('int64')
+            else:
+                # Very old pandas versions
+                result_df['week_of_year'] = dt.dt.week.astype('int64') if hasattr(dt.dt, 'week') else dt.apply(lambda x: x.isocalendar()[1]).astype('int64')
+        except Exception as e:
+            self.logger.warning(f"Could not extract week_of_year: {e}")
+            # Safe fallback
+            result_df['week_of_year'] = 0
+        
+        result_df['month'] = dt.dt.month.astype('int64')
+        result_df['quarter'] = dt.dt.quarter.astype('int64')
+        result_df['year'] = dt.dt.year.astype('int64')
+        
+        # Cyclical encoding for time features
         result_df['hour_sin'] = np.sin(2 * np.pi * result_df['hour'] / 24)
         result_df['hour_cos'] = np.cos(2 * np.pi * result_df['hour'] / 24)
-        
         result_df['day_of_week_sin'] = np.sin(2 * np.pi * result_df['day_of_week'] / 7)
         result_df['day_of_week_cos'] = np.cos(2 * np.pi * result_df['day_of_week'] / 7)
-        
         result_df['month_sin'] = np.sin(2 * np.pi * result_df['month'] / 12)
         result_df['month_cos'] = np.cos(2 * np.pi * result_df['month'] / 12)
         
-        # Binary features
-        result_df['is_weekend'] = (result_df['day_of_week'] >= 5).astype(int)
-        result_df['is_month_start'] = (result_df['day_of_month'] <= 3).astype(int)
-        result_df['is_month_end'] = (result_df['day_of_month'] >= 28).astype(int)
-        result_df['is_quarter_start'] = result_df['month'].isin([1, 4, 7, 10]).astype(int)
+        # Binary features - explicitly convert to int to avoid potential issues
+        result_df['is_weekend'] = (result_df['day_of_week'] >= 5).astype('int64')
+        result_df['is_month_start'] = (result_df['day_of_month'] <= 3).astype('int64')
+        result_df['is_month_end'] = (result_df['day_of_month'] >= 28).astype('int64')
+        result_df['is_quarter_start'] = result_df['month'].isin([1, 4, 7, 10]).astype('int64')
         
         self.logger.info("Created time-based seasonal features")
         
@@ -566,7 +615,8 @@ class FeaturePipeline:
     
     def __init__(self, config: Optional[Dict[str, Any]] = None):
         """Initialize feature pipeline."""
-        self.config = config or get_config().features.dict()
+        from .config import get_model_dict
+        self.config = config or get_model_dict(get_config().features)
         self.logger = logger.bind(component="feature_pipeline")
         
         # Initialize components

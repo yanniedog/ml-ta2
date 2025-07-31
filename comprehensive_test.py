@@ -299,8 +299,18 @@ def test_end_to_end():
         print(f"  🏗️  Created {len(features_data.columns)} total features")
         
         # Step 3: Feature selection
-        target = (features_data['close'].pct_change().shift(-1) > 0).astype(int).dropna()
-        features_for_selection = features_data.iloc[:-1]
+        # Create target with shift and ensure perfect alignment with features
+        target = (features_data['close'].pct_change().shift(-1) > 0).astype(int)
+        
+        # Since shift(-1) creates NaN at the end, we need to remove the last row from both
+        features_for_selection = features_data.iloc[:-1].copy()
+        target = target.iloc[:-1].copy()  # Align with features_for_selection
+        
+        # Now drop any remaining NaNs and align both datasets
+        target = target.dropna()
+        common_idx = target.index.intersection(features_for_selection.index)
+        target = target.loc[common_idx]
+        features_for_selection = features_for_selection.loc[common_idx]
         
         selector = create_feature_selector()
         selected_features = selector.fit_transform(features_for_selection, target, task_type='classification')

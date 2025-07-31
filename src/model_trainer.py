@@ -147,7 +147,7 @@ class ModelTrainer:
         self._fit_model(X_train, y_train, X_valid, y_valid)
 
         preds = self._predict_internal(X_valid)
-        rmse = mean_squared_error(y_valid, preds, squared=False)
+        rmse = np.sqrt(mean_squared_error(y_valid, preds))
         logger.info("Validation RMSE: %.5f", rmse)
 
         self.history["rmse"] = rmse
@@ -180,15 +180,12 @@ class ModelTrainer:
                 X_train,
                 y_train,
                 eval_set=[(X_valid, y_valid)],
-                early_stopping_rounds=50,
-                verbose=False,
             )
         elif self.algo == "xgboost":
             self.model.fit(
                 X_train,
                 y_train,
                 eval_set=[(X_valid, y_valid)],
-                early_stopping_rounds=50,
                 verbose=False,
             )
         else:  # random forest – no early stopping
@@ -214,7 +211,7 @@ class ModelTrainer:
             model = self._build_model(params)
             self._fit_model(X_train, y_train, X_valid, y_valid)
             preds = model.predict(X_valid)
-            rmse = mean_squared_error(y_valid, preds, squared=False)
+            rmse = np.sqrt(mean_squared_error(y_valid, preds))
             return rmse
 
         study = optuna.create_study(direction="minimize")
