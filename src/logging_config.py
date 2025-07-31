@@ -44,18 +44,20 @@ except ImportError:
             return self
     
     def get_logger(name):
-        return StructlogFallback(name)
-    
-    class StructlogModule:
-        @staticmethod
-        def get_logger(name):
-            return StructlogFallback(name)
+        # Create structlog-compatible interface
+        class StructlogCompat:
+            @staticmethod
+            def get_logger(name):
+                return logging.getLogger(name)
+            
+            # Add stdlib attribute for compatibility
+            class stdlib:
+                @staticmethod
+                def get_logger(name):
+                    return logging.getLogger(name)
         
-        class BoundLogger:
-            pass
-    
-    structlog = StructlogModule()
-    JSONRenderer = lambda: None
+        structlog = StructlogCompat()
+        JSONRenderer = lambda: None
 
 try:
     import colorlog

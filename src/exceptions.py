@@ -8,8 +8,13 @@ with recovery strategies, retry mechanisms, and graceful degradation.
 import time
 import random
 import logging
-from typing import Dict, Any, Optional, Callable, Union
-from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional, Union, Callable, Type
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+import traceback
+import time
+import threading
 from enum import Enum
 from dataclasses import dataclass, field
 from functools import wraps
@@ -17,10 +22,20 @@ from functools import wraps
 # Handle optional dependencies gracefully
 try:
     import structlog
+    logger = structlog.get_logger(__name__)
     STRUCTLOG_AVAILABLE = True
 except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
     STRUCTLOG_AVAILABLE = False
-    structlog = logging
+    
+    # Create structlog-compatible interface
+    class StructlogCompat:
+        @staticmethod
+        def get_logger(name):
+            return logging.getLogger(name)
+    
+    structlog = StructlogCompat()
 
 try:
     from tenacity import retry, stop_after_attempt, wait_exponential
@@ -284,7 +299,8 @@ class RetryManager:
     def __init__(self, config: RetryConfig = None):
         """Initialize retry manager."""
         self.config = config or RetryConfig()
-        self.logger = logger.bind(component="retry_manager")
+        # Use logger directly since bind may not be available in fallback mode
+        self.logger = logger
     
     def calculate_delay(self, attempt: int) -> float:
         """Calculate delay for given attempt number."""
@@ -417,7 +433,8 @@ class ErrorHandler:
     
     def __init__(self):
         """Initialize error handler."""
-        self.logger = logger.bind(component="error_handler")
+        # Use logger directly since bind may not be available in fallback mode
+        self.logger = logger
         self.retry_manager = RetryManager()
         self.circuit_breakers: Dict[str, CircuitBreaker] = {}
     
@@ -478,7 +495,8 @@ class GracefulDegradation:
     
     def __init__(self):
         """Initialize graceful degradation manager."""
-        self.logger = logger.bind(component="graceful_degradation")
+        # Use logger directly since bind may not be available in fallback mode
+        self.logger = logger
         self.fallback_strategies: Dict[str, Callable] = {}
     
     def register_fallback(self, operation: str, fallback_func: Callable) -> None:
@@ -520,7 +538,8 @@ class ErrorRecovery:
     
     def __init__(self):
         """Initialize error recovery manager."""
-        self.logger = logger.bind(component="error_recovery")
+        # Use logger directly since bind may not be available in fallback mode
+        self.logger = logger
         self.recovery_strategies: Dict[str, Callable] = {}
     
     def register_recovery_strategy(self, error_type: str, recovery_func: Callable) -> None:
