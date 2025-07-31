@@ -192,6 +192,11 @@ class StructuredLogger:
     
     def _setup_structlog(self) -> None:
         """Configure structlog with processors and formatters."""
+        if not STRUCTLOG_AVAILABLE:
+            # Use fallback logger setup
+            self.logger = logging.getLogger(self.name)
+            return
+            
         processors = [
             structlog.stdlib.filter_by_level,
             structlog.stdlib.add_logger_name,
@@ -221,7 +226,37 @@ class StructuredLogger:
     
     def get_logger(self):
         """Get configured structlog logger."""
+        if not STRUCTLOG_AVAILABLE:
+            return self.logger
         return structlog.get_logger(self.name)
+    
+    def info(self, message, **kwargs):
+        """Log info message."""
+        if not STRUCTLOG_AVAILABLE:
+            self.logger.info(message)
+        else:
+            structlog.get_logger(self.name).info(message, **kwargs)
+    
+    def error(self, message, **kwargs):
+        """Log error message."""
+        if not STRUCTLOG_AVAILABLE:
+            self.logger.error(message)
+        else:
+            structlog.get_logger(self.name).error(message, **kwargs)
+    
+    def warning(self, message, **kwargs):
+        """Log warning message."""
+        if not STRUCTLOG_AVAILABLE:
+            self.logger.warning(message)
+        else:
+            structlog.get_logger(self.name).warning(message, **kwargs)
+    
+    def debug(self, message, **kwargs):
+        """Log debug message."""
+        if not STRUCTLOG_AVAILABLE:
+            self.logger.debug(message)
+        else:
+            structlog.get_logger(self.name).debug(message, **kwargs)
 
 
 class LoggerFactory:
