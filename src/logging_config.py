@@ -10,13 +10,84 @@ import sys
 import json
 import logging
 import logging.handlers
-from pathlib import Path
-from typing import Dict, Any, Optional, Union
 from datetime import datetime
-import structlog
-import colorlog
-from pythonjsonlogger import jsonlogger
-import psutil
+from typing import Dict, Any, Optional, Union
+from pathlib import Path
+
+# Handle optional dependencies gracefully
+try:
+    import structlog
+    from structlog.processors import JSONRenderer
+    STRUCTLOG_AVAILABLE = True
+except ImportError:
+    STRUCTLOG_AVAILABLE = False
+    import logging
+    
+    # Create minimal structlog-like interface
+    class StructlogFallback:
+        def __init__(self, name):
+            self.logger = logging.getLogger(name)
+        
+        def info(self, msg, **kwargs):
+            self.logger.info(f"{msg} {kwargs}")
+        
+        def warning(self, msg, **kwargs):
+            self.logger.warning(f"{msg} {kwargs}")
+        
+        def error(self, msg, **kwargs):
+            self.logger.error(f"{msg} {kwargs}")
+        
+        def debug(self, msg, **kwargs):
+            self.logger.debug(f"{msg} {kwargs}")
+        
+        def bind(self, **kwargs):
+            return self
+    
+    def get_logger(name):
+        return StructlogFallback(name)
+    
+    class StructlogModule:
+        @staticmethod
+        def get_logger(name):
+            return StructlogFallback(name)
+        
+        class BoundLogger:
+            pass
+    
+    structlog = StructlogModule()
+    JSONRenderer = lambda: None
+
+try:
+    import colorlog
+    COLORLOG_AVAILABLE = True
+except ImportError:
+    COLORLOG_AVAILABLE = False
+    colorlog = None
+
+# Handle optional dependencies gracefully
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    psutil = None
+
+try:
+    from pythonjsonlogger import jsonlogger
+    JSONLOGGER_AVAILABLE = True
+except ImportError:
+    JSONLOGGER_AVAILABLE = False
+    # Create fallback jsonlogger
+    class JsonFormatter:
+        def __init__(self, *args, **kwargs):
+            pass
+        
+        def format(self, record):
+            return str(record)
+    
+    class jsonlogger:
+        JsonFormatter = JsonFormatter
+
 import threading
 import time
 from collections import defaultdict, deque

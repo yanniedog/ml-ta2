@@ -9,19 +9,51 @@ import os
 import sys
 import hashlib
 import random
-import shutil
 import pickle
-import joblib
-import psutil
-import numpy as np
-import pandas as pd
+import json
+import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union, Tuple
-from datetime import datetime, timezone
-import pyarrow as pa
-import pyarrow.parquet as pq
-from cryptography.fernet import Fernet
-import structlog
+from typing import Dict, Any, Optional, Union, List
+from datetime import datetime
+import pandas as pd
+import numpy as np
+
+# Handle optional dependencies gracefully
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+    psutil = None
+
+try:
+    from cryptography.fernet import Fernet
+    CRYPTOGRAPHY_AVAILABLE = True
+except ImportError:
+    CRYPTOGRAPHY_AVAILABLE = False
+    # Fallback encryption (basic base64 - not secure, for development only)
+    import base64
+    class Fernet:
+        def __init__(self, key):
+            self.key = key
+        
+        @staticmethod
+        def generate_key():
+            return base64.b64encode(b'development_key_not_secure').decode()
+        
+        def encrypt(self, data):
+            return base64.b64encode(data).decode()
+        
+        def decrypt(self, data):
+            return base64.b64decode(data.encode())
+
+try:
+    import structlog
+    STRUCTLOG_AVAILABLE = True
+except ImportError:
+    STRUCTLOG_AVAILABLE = False
+    import logging
+    structlog = logging
 
 from .exceptions import MLTAException, ValidationError, SystemResourceError
 

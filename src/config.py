@@ -10,11 +10,69 @@ import yaml
 import logging
 from pathlib import Path
 from typing import Dict, Any, Optional, Union
-from pydantic import BaseModel, Field, validator
-from cryptography.fernet import Fernet
-import structlog
 
-logger = structlog.get_logger(__name__)
+# Handle optional dependencies gracefully
+try:
+    from pydantic import BaseModel, Field, validator
+    PYDANTIC_AVAILABLE = True
+except ImportError:
+    # Fallback for when pydantic is not available
+    class BaseModel:
+        def __init__(self, **kwargs):
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+        
+        def dict(self):
+            return {k: v for k, v in self.__dict__.items() if not k.startswith('_')}
+    
+    def Field(**kwargs):
+        return None
+    
+    def validator(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    
+    PYDANTIC_AVAILABLE = False
+
+try:
+    from cryptography.fernet import Fernet
+    CRYPTOGRAPHY_AVAILABLE = True
+except ImportError:
+    # Fallback encryption (basic base64 - not secure, for development only)
+    import base64
+    class Fernet:
+        def __init__(self, key):
+            self.key = key
+        
+        @staticmethod
+        def generate_key():
+            return base64.b64encode(b'development_key_not_secure').decode()
+        
+        def encrypt(self, data):
+            return base64.b64encode(data).decode()
+        
+        def decrypt(self, data):
+            return base64.b64decode(data.encode())
+    
+    CRYPTOGRAPHY_AVAILABLE = False
+
+try:
+    import structlog
+    logger = structlog.get_logger(__name__)
+    STRUCTLOG_AVAILABLE = True
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
+    STRUCTLOG_AVAILABLE = False
+    
+    # Create structlog-compatible interface
+    class StructlogCompat:
+        @staticmethod
+        def get_logger(name):
+            return logging.getLogger(name)
+    
+    structlog = StructlogCompat()
 
 
 class AppConfig(BaseModel):

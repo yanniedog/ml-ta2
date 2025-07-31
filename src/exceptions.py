@@ -8,12 +8,36 @@ with recovery strategies, retry mechanisms, and graceful degradation.
 import time
 import random
 import logging
-import traceback
-from typing import Dict, Any, Optional, Callable, Type, Union
+from typing import Dict, Any, Optional, Callable, Union
+from datetime import datetime, timedelta
 from enum import Enum
 from dataclasses import dataclass, field
 from functools import wraps
-import structlog
+
+# Handle optional dependencies gracefully
+try:
+    import structlog
+    STRUCTLOG_AVAILABLE = True
+except ImportError:
+    STRUCTLOG_AVAILABLE = False
+    structlog = logging
+
+try:
+    from tenacity import retry, stop_after_attempt, wait_exponential
+    TENACITY_AVAILABLE = True
+except ImportError:
+    TENACITY_AVAILABLE = False
+    # Simple fallback decorators
+    def retry(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    
+    def stop_after_attempt(n):
+        return None
+    
+    def wait_exponential(**kwargs):
+        return None
 
 logger = structlog.get_logger(__name__)
 

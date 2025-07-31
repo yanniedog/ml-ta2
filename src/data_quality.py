@@ -7,13 +7,33 @@ data profiling, and quality reporting for cryptocurrency market data.
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Union, Tuple
 from datetime import datetime, timedelta
-from dataclasses import dataclass, field
-from enum import Enum
 import json
-from pathlib import Path
-import structlog
+
+# Handle optional dependencies gracefully
+try:
+    from scipy import stats
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
+    # Simple fallback for basic statistics
+    class stats:
+        @staticmethod
+        def zscore(data):
+            return (data - np.mean(data)) / np.std(data)
+        
+        @staticmethod
+        def iqr(data):
+            return np.percentile(data, 75) - np.percentile(data, 25)
+
+try:
+    import structlog
+    STRUCTLOG_AVAILABLE = True
+except ImportError:
+    STRUCTLOG_AVAILABLE = False
+    import logging
+    structlog = logging
 
 from .config import get_config
 from .exceptions import ValidationError, DataQualityError

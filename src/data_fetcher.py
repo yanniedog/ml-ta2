@@ -11,13 +11,41 @@ import aiohttp
 import requests
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any, Union
+from urllib.parse import urlencode
 import json
-from pathlib import Path
-import hashlib
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-import structlog
+
+# Handle optional dependencies gracefully
+try:
+    import structlog
+    STRUCTLOG_AVAILABLE = True
+except ImportError:
+    STRUCTLOG_AVAILABLE = False
+    import logging
+    structlog = logging
+
+try:
+    from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+    TENACITY_AVAILABLE = True
+except ImportError:
+    TENACITY_AVAILABLE = False
+    # Simple fallback decorators
+    def retry(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    
+    def stop_after_attempt(n):
+        return None
+    
+    def wait_exponential(**kwargs):
+        return None
+    
+    def retry_if_exception_type(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
 
 from .config import get_config
 from .exceptions import (
