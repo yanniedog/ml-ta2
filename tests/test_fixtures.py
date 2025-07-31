@@ -401,3 +401,66 @@ def reset_random_seed():
     np.random.seed(42)
     import random
     random.seed(42)
+
+
+# Phase 5: Prediction System Test Fixtures
+
+class SimpleMockModel:
+    """A simple mock model for prediction testing."""
+    
+    def __init__(self):
+        self.random_state = np.random.RandomState(42)
+    
+    def predict(self, X):
+        """Make deterministic predictions for testing."""
+        if isinstance(X, pd.DataFrame):
+            X = X.values
+        n_samples = len(X)
+        return self.random_state.rand(n_samples)
+    
+    def predict_proba(self, X):
+        """Generate probability predictions for testing."""
+        if isinstance(X, pd.DataFrame):
+            X = X.values
+        n_samples = len(X)
+        probas = self.random_state.rand(n_samples, 2)
+        # Normalize to sum to 1
+        probas = probas / probas.sum(axis=1, keepdims=True)
+        return probas
+
+
+@pytest.fixture
+def sample_data_fixture():
+    """Generate sample input data for prediction tests."""
+    # Create simple feature dataframe
+    data = pd.DataFrame({
+        'feature1': np.random.randn(10),
+        'feature2': np.random.randn(10),
+        'feature3': np.random.randn(10),
+        'feature4': np.random.uniform(0, 1, 10),
+        'feature5': np.random.choice([0, 1], 10)
+    })
+    return data
+
+
+@pytest.fixture
+def sample_model_fixture():
+    """Create a sample model for prediction testing."""
+    return SimpleMockModel()
+
+
+@pytest.fixture
+def sample_prediction_fixture():
+    """Generate sample prediction output for testing."""
+    from src.prediction_engine import PredictionResponse
+    
+    # Create mock prediction response
+    return PredictionResponse(
+        request_id="test-request-123",
+        timestamp=datetime.now(),
+        predictions=np.array([0.1, 0.2, 0.3]),
+        probabilities=np.array([[0.6, 0.4], [0.7, 0.3], [0.8, 0.2]]),
+        processing_time_ms=15.5,
+        model_name="test_model",
+        metadata={"source": "test_fixture"}
+    )

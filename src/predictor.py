@@ -48,7 +48,11 @@ class Predictor:
     def __init__(self, 
                  prediction_engine: Optional[PredictionEngine] = None,
                  model_server: Optional[ModelServer] = None,
-                 config: Optional[Dict[str, Any]] = None):
+                 config: Optional[Dict[str, Any]] = None,
+                 default_model: str = 'latest',
+                 fallback_strategy: str = 'default_prediction',
+                 max_cache_size: int = 1000,
+                 max_batch_size: int = 100):
         """
         Initialize the predictor.
         
@@ -56,17 +60,35 @@ class Predictor:
             prediction_engine: Optional PredictionEngine instance
             model_server: Optional ModelServer instance
             config: Configuration dictionary
+            default_model: Default model name to use
+            fallback_strategy: Strategy for handling prediction failures
+            max_cache_size: Maximum number of cached predictions
+            max_batch_size: Maximum batch size for predictions
         """
-        self.config = config or get_config().get('prediction', {})
+        # Use provided config or get a default
+        if config is not None:
+            self.config = config
+        else:
+            config_obj = get_config()
+            self.config = {}
+            if hasattr(config_obj, 'prediction'):
+                self.config = config_obj.prediction.__dict__ if hasattr(config_obj.prediction, '__dict__') else {}
+        
+        # Initialize with passed parameters, fall back to config values
+        self.default_model = default_model
+        self.fallback_strategy = fallback_strategy
+        self.max_cache_size = max_cache_size
+        self.max_batch_size = max_batch_size
+        self.cache_enabled = self.config.get('cache_enabled', True)
+        
+        # Initialize components
         self.prediction_engine = prediction_engine or create_prediction_engine(
             max_latency_ms=self.config.get('max_latency_ms', 100.0),
             enable_monitoring=self.config.get('enable_monitoring', True),
             enable_ab_testing=self.config.get('enable_ab_testing', False)
         )
+        
         self.model_server = model_server or create_model_server()
-        self.fallback_strategy = self.config.get('fallback_strategy', 'default_prediction')
-        self.default_model = self.config.get('default_model', 'latest')
-        self.cache_enabled = self.config.get('enable_cache', True)
         self.lock = threading.RLock()
         
         logger.info("Predictor initialized", 
@@ -327,35 +349,48 @@ class Predictor:
             }
 
 
-def create_predictor(config: Optional[Dict[str, Any]] = None) -> Predictor:
+def create_predictor(config_override: Optional[Dict[str, Any]] = None) -> Predictor:
     """
     Factory function to create a Predictor instance.
     
     Args:
-        config: Optional configuration dictionary
+        config_override: Optional configuration dictionary to override defaults
         
     Returns:
         Configured Predictor instance
     """
-    config = config or get_config().get('prediction', {})
+    # Get configuration
+    config = get_config()
+    
+    # Get prediction configuration or empty dict if not available
+    prediction_config = {}
+    if hasattr(config, 'prediction'):
+        prediction_config = config.prediction.__dict__ if hasattr(config.prediction, '__dict__') else {}
+    
+    # Apply overrides if provided
+    if config_override:
+        prediction_config.update(config_override)
     
     # Create prediction engine with specified configuration
     prediction_engine = create_prediction_engine(
-        max_latency_ms=config.get('max_latency_ms', 100.0),
-        enable_monitoring=config.get('enable_monitoring', True),
-        enable_ab_testing=config.get('enable_ab_testing', False)
+        max_latency_ms=prediction_config.get('max_latency_ms', 100.0),
+        enable_monitoring=prediction_config.get('enable_monitoring', True),
+        enable_ab_testing=prediction_config.get('enable_ab_testing', False)
     )
     
     # Create model server with specified configuration
     model_server = create_model_server(
-        max_concurrent_requests=config.get('max_concurrent_requests', 100),
-        request_timeout_seconds=config.get('request_timeout_seconds', 30.0),
-        health_check_interval=config.get('health_check_interval', 30)
+        max_concurrent_requests=prediction_config.get('max_concurrent_requests', 100),
+        request_timeout_seconds=prediction_config.get('request_timeout_seconds', 30.0),
+        health_check_interval=prediction_config.get('health_check_interval', 30)
     )
     
     # Create and return the predictor
     return Predictor(
         prediction_engine=prediction_engine,
         model_server=model_server,
-        config=config
+        default_model=prediction_config.get('default_model', 'latest'),
+        fallback_strategy=prediction_config.get('fallback_strategy', 'default_prediction'),
+        max_cache_size=prediction_config.get('max_cache_size', 1000),
+        max_batch_size=prediction_config.get('max_batch_size', 100)
     )

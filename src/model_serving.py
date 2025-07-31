@@ -350,6 +350,7 @@ class ModelServer:
         self.deployed_models = {}
         self.request_stats = {}
         self.lock = threading.RLock()
+        self.is_running = False
         
         logger.info("ModelServer initialized", 
                    max_concurrent_requests=self.config.max_concurrent_requests,
@@ -357,22 +358,33 @@ class ModelServer:
     
     def start(self):
         """Start the model server."""
+        if self.is_running:
+            logger.info("ModelServer is already running")
+            return
+            
         try:
             self.health_checker.start_monitoring()
+            self.is_running = True
             logger.info("ModelServer started")
             
         except Exception as e:
             logger.error(f"Failed to start ModelServer: {e}")
             raise
-    
+            
     def stop(self):
         """Stop the model server."""
+        if not self.is_running:
+            logger.info("ModelServer is already stopped")
+            return
+            
         try:
             self.health_checker.stop_monitoring()
+            self.is_running = False
             logger.info("ModelServer stopped")
             
         except Exception as e:
             logger.error(f"Failed to stop ModelServer: {e}")
+            raise
     
     def deploy_model(self, model_name: str, model_version: str, 
                     model_object: Any, metadata: Optional[ModelMetadata] = None) -> bool:

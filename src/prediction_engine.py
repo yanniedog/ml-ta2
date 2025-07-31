@@ -526,6 +526,33 @@ class PredictionEngine:
         
         return responses
     
+    def start(self):
+        """Start the prediction engine and all its components."""
+        if self.is_running:
+            logger.info("PredictionEngine is already running")
+            return
+        
+        logger.info("Starting PredictionEngine")
+        self.is_running = True
+        
+        # Initialize any background workers or services here if needed
+        # For example, we could start a background thread for batch processing
+        
+        logger.info("PredictionEngine started successfully")
+    
+    def stop(self):
+        """Stop the prediction engine and all its components."""
+        if not self.is_running:
+            logger.info("PredictionEngine is already stopped")
+            return
+        
+        logger.info("Stopping PredictionEngine")
+        self.is_running = False
+        
+        # Cleanup resources, stop background threads, etc.
+        
+        logger.info("PredictionEngine stopped successfully")
+    
     def get_status(self) -> Dict[str, Any]:
         """Get prediction engine status."""
         return {

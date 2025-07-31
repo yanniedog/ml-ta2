@@ -639,6 +639,33 @@ def handle_errors(
     return decorator
 
 
+class TestingError(MLTAException):
+    """Exception for A/B testing and experimentation framework failures."""
+    
+    def __init__(self, message: str, test_name: str = "unknown", **kwargs):
+        super().__init__(
+            message,
+            error_code="TESTING_ERROR",
+            category=ErrorCategory.SYSTEM,
+            **kwargs
+        )
+        self.test_name = test_name
+
+
+class PredictionError(MLTAException):
+    """Exception for prediction system failures."""
+    
+    def __init__(self, message: str, model_name: str = "unknown", request_id: str = None, **kwargs):
+        super().__init__(
+            message,
+            error_code="PREDICTION_ERROR",
+            category=ErrorCategory.MODEL,
+            **kwargs
+        )
+        self.model_name = model_name
+        self.request_id = request_id
+
+
 # Global instances
 error_handler = ErrorHandler()
 graceful_degradation = GracefulDegradation()
