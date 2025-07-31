@@ -1,0 +1,13 @@
+# Development Dependencies
+jupyter>=1.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.15.0
+
+# Code Quality and Development Tools
+pre-commit>=3.3.0
+bandit>=1.7.0
+safety>=2.3.0
+
+# Documentation
+sphinx>=7.0.0

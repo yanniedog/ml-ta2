@@ -1,0 +1,19 @@
+# Development Environment Overrides
+app:
+  debug: true
+  environment: "development"
+
+database:
+  url: "sqlite:///ml_ta_dev.db"
+  echo: true
+
+monitoring:
+  log_level: "DEBUG"
+  enable_profiling: true
+
+security:
+  jwt_secret_key: "dev-secret-key-not-for-production"
+
+performance:
+  parallel_jobs: 2
+  batch_size: 100

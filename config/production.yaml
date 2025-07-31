@@ -1,0 +1,37 @@
+# Production Environment Overrides
+app:
+  debug: false
+  environment: "production"
+
+database:
+  url: "postgresql://user:password@localhost:5432/ml_ta_prod"
+  echo: false
+  pool_size: 20
+  max_overflow: 50
+
+redis:
+  host: "redis-cluster.internal"
+  port: 6379
+  db: 0
+  socket_timeout: 10
+
+security:
+  jwt_secret_key: "${JWT_SECRET_KEY}"
+  rate_limit_per_minute: 100
+  allowed_origins:
+    - "https://ml-ta.company.com"
+
+monitoring:
+  log_level: "INFO"
+  enable_profiling: false
+  metrics_port: 9090
+
+performance:
+  max_memory_gb: 16
+  max_cpu_percent: 70
+  batch_size: 5000
+  parallel_jobs: -1
+  cache_size_mb: 2048
+
+binance:
+  rate_limit_requests_per_minute: 1000

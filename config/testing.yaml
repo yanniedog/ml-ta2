@@ -1,0 +1,25 @@
+# Testing Environment Overrides
+app:
+  debug: false
+  environment: "testing"
+
+database:
+  url: "sqlite:///:memory:"
+  echo: false
+
+data:
+  max_records_per_fetch: 100
+  data_retention_days: 7
+
+model:
+  hyperopt_trials: 5
+  cv_folds: 2
+
+performance:
+  parallel_jobs: 1
+  batch_size: 50
+  max_memory_gb: 1
+
+monitoring:
+  log_level: "WARNING"
+  enable_profiling: false
