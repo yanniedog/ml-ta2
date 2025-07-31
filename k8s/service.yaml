@@ -1,0 +1,132 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-ta-api-service
+  namespace: ml-ta
+  labels:
+    app: ml-ta-api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: metrics
+  selector:
+    app: ml-ta-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-ta-api-headless
+  namespace: ml-ta
+  labels:
+    app: ml-ta-api
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: ml-ta-api
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ml-ta-ingress
+  namespace: ml-ta
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - api.ml-ta.com
+    secretName: ml-ta-tls
+  rules:
+  - host: api.ml-ta.com
+    http:
+      paths:
+      - path: /api(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: ml-ta-api-service
+            port:
+              number: 80
+      - path: /metrics(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: ml-ta-api-service
+            port:
+              number: 9090
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ml-ta-network-policy
+  namespace: ml-ta
+spec:
+  podSelector:
+    matchLabels:
+      app: ml-ta-api
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app: ml-ta-api
+    - podSelector:
+        matchLabels:
+          app: ml-ta-worker
+    ports:
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 9090
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: kube-system
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+  - to:
+    - podSelector:
+        matchLabels:
+          app: redis
+    - podSelector:
+        matchLabels:
+          app: postgresql
+    ports:
+    - protocol: TCP
+      port: 6379
+    - protocol: TCP
+      port: 5432
+  - to: []
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80

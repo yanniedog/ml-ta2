@@ -1,0 +1,86 @@
+[
+  {
+    "test_category": "User Acceptance",
+    "test_name": "trading_signal_generation",
+    "status": "PASSED",
+    "score": 0.8833333333333333,
+    "timestamp": "2025-07-31T18:40:06.099438"
+  },
+  {
+    "test_category": "User Acceptance",
+    "test_name": "realtime_prediction_performance",
+    "status": "PASSED",
+    "score": 0.88,
+    "timestamp": "2025-07-31T18:40:06.099438"
+  },
+  {
+    "test_category": "User Acceptance",
+    "test_name": "data_pipeline_reliability",
+    "status": "PASSED",
+    "score": 0.9583333333333334,
+    "timestamp": "2025-07-31T18:40:06.099438"
+  },
+  {
+    "test_category": "User Acceptance",
+    "test_name": "api_usability",
+    "status": "PASSED",
+    "score": 0.9066666666666667,
+    "timestamp": "2025-07-31T18:40:06.099438"
+  },
+  {
+    "test_category": "User Acceptance",
+    "test_name": "monitoring_alerting",
+    "status": "PASSED",
+    "score": 0.9166666666666666,
+    "timestamp": "2025-07-31T18:40:06.099438"
+  },
+  {
+    "test_category": "User Acceptance",
+    "test_name": "security_compliance",
+    "status": "PASSED",
+    "score": 0.9333333333333335,
+    "timestamp": "2025-07-31T18:40:06.099438"
+  },
+  {
+    "test_category": "Production Readiness",
+    "test_name": "infrastructure_readiness",
+    "status": "PASSED",
+    "score": 0.935,
+    "timestamp": "2025-07-31T18:40:06.099438"
+  },
+  {
+    "test_category": "Production Readiness",
+    "test_name": "application_readiness",
+    "status": "PASSED",
+    "score": 0.9266666666666666,
+    "timestamp": "2025-07-31T18:40:06.099438"
+  },
+  {
+    "test_category": "Production Readiness",
+    "test_name": "operational_readiness",
+    "status": "WARNING",
+    "score": 0.8983333333333333,
+    "timestamp": "2025-07-31T18:40:06.099438"
+  },
+  {
+    "test_category": "Production Readiness",
+    "test_name": "security_readiness",
+    "status": "PASSED",
+    "score": 0.9333333333333332,
+    "timestamp": "2025-07-31T18:40:06.099438"
+  },
+  {
+    "test_category": "Production Readiness",
+    "test_name": "performance_readiness",
+    "status": "WARNING",
+    "score": 0.9100000000000001,
+    "timestamp": "2025-07-31T18:40:06.099438"
+  },
+  {
+    "test_category": "Production Readiness",
+    "test_name": "compliance_readiness",
+    "status": "WARNING",
+    "score": 0.9116666666666666,
+    "timestamp": "2025-07-31T18:40:06.099438"
+  }
+]

@@ -1,0 +1,228 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ml-ta
+  labels:
+    name: ml-ta
+    environment: production
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ml-ta-service-account
+  namespace: ml-ta
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: ml-ta
+  name: ml-ta-role
+rules:
+- apiGroups: [""]
+  resources: ["pods", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ml-ta-role-binding
+  namespace: ml-ta
+subjects:
+- kind: ServiceAccount
+  name: ml-ta-service-account
+  namespace: ml-ta
+roleRef:
+  kind: Role
+  name: ml-ta-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-ta-data-pvc
+  namespace: ml-ta
+  labels:
+    app: ml-ta
+    component: data
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 100Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-ta-models-pvc
+  namespace: ml-ta
+  labels:
+    app: ml-ta
+    component: models
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: fast-ssd
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ml-ta-logs-pvc
+  namespace: ml-ta
+  labels:
+    app: ml-ta
+    component: logs
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ml-ta-config
+  namespace: ml-ta
+data:
+  production.yaml: |
+    # ML-TA Production Configuration
+    environment: production
+    
+    # API Configuration
+    api:
+      host: "0.0.0.0"
+      port: 8000
+      workers: 4
+      timeout: 30
+      max_request_size: 10485760  # 10MB
+      cors_origins:
+        - "https://app.ml-ta.com"
+        - "https://dashboard.ml-ta.com"
+    
+    # Database Configuration
+    database:
+      pool_size: 20
+      max_overflow: 30
+      pool_timeout: 30
+      pool_recycle: 3600
+      echo: false
+    
+    # Redis Configuration
+    redis:
+      max_connections: 100
+      retry_on_timeout: true
+      socket_timeout: 5
+      socket_connect_timeout: 5
+    
+    # ML Configuration
+    ml:
+      batch_size: 1000
+      prediction_timeout: 5.0
+      model_cache_size: 10
+      feature_cache_ttl: 300
+    
+    # Monitoring Configuration
+    monitoring:
+      metrics_port: 9090
+      log_level: "INFO"
+      enable_profiling: false
+      alert_thresholds:
+        cpu_usage: 80
+        memory_usage: 85
+        disk_usage: 90
+        prediction_latency: 100  # milliseconds
+    
+    # Security Configuration
+    security:
+      jwt_algorithm: "HS256"
+      jwt_expiration: 3600
+      rate_limit:
+        requests_per_minute: 1000
+        burst_size: 100
+      encryption:
+        algorithm: "AES-256-GCM"
+    
+    # Backup Configuration
+    backup:
+      enabled: true
+      schedule: "0 2 * * *"  # Daily at 2 AM
+      retention_days: 30
+      compression: true
+  
+  nginx.conf: |
+    upstream ml_ta_backend {
+        least_conn;
+        server ml-ta-api-service:80 max_fails=3 fail_timeout=30s;
+    }
+    
+    server {
+        listen 80;
+        server_name api.ml-ta.com;
+        
+        # Security headers
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+        
+        # Rate limiting
+        limit_req_zone $binary_remote_addr zone=api:10m rate=10r/s;
+        limit_req zone=api burst=20 nodelay;
+        
+        # API routes
+        location /api/ {
+            proxy_pass http://ml_ta_backend/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            
+            # Timeouts
+            proxy_connect_timeout 5s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+            
+            # Buffering
+            proxy_buffering on;
+            proxy_buffer_size 4k;
+            proxy_buffers 8 4k;
+        }
+        
+        # Health check
+        location /health {
+            proxy_pass http://ml_ta_backend/health;
+            access_log off;
+        }
+        
+        # Metrics (restricted access)
+        location /metrics {
+            allow 10.0.0.0/8;
+            allow 172.16.0.0/12;
+            allow 192.168.0.0/16;
+            deny all;
+            
+            proxy_pass http://ml_ta_backend:9090/metrics;
+        }
+    }
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ml-ta-secrets
+  namespace: ml-ta
+type: Opaque
+data:
+  # Base64 encoded values (replace with actual secrets)
+  database-url: cG9zdGdyZXNxbDovL3VzZXI6cGFzc3dvcmRAcG9zdGdyZXNxbDo1NDMyL21sdGE=
+  redis-url: cmVkaXM6Ly9yZWRpczpwYXNzd29yZEByZWRpczozNjM3LzA=
+  jwt-secret: c3VwZXItc2VjcmV0LWp3dC1rZXktY2hhbmdlLWluLXByb2R1Y3Rpb24=
+  encryption-key: YWVzLTI1Ni1nY20tZW5jcnlwdGlvbi1rZXktY2hhbmdlLWluLXByb2R1Y3Rpb24=
