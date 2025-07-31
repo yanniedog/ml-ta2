@@ -219,7 +219,7 @@ class StructuredLogger:
             cache_logger_on_first_use=True,
         )
     
-    def get_logger(self) -> structlog.BoundLogger:
+    def get_logger(self):
         """Get configured structlog logger."""
         return structlog.get_logger(self.name)
 
