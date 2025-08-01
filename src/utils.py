@@ -55,7 +55,7 @@ except ImportError:
     import logging
     structlog = logging
 
-from .exceptions import MLTAException, ValidationError, SystemResourceError
+from src.exceptions import MLTAException, ValidationError, SystemResourceError
 
 logger = structlog.get_logger(__name__)
 

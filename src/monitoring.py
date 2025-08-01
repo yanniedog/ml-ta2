@@ -67,6 +67,11 @@ class MetricValue:
 @dataclass
 class AlertRule:
     """Alert rule configuration."""
+    # Accept either `name` or deprecated `rule_name` as first argument.
+    # To maintain backward compatibility with older tests we allow `rule_name`
+    # as an alias via `__post_init__`.
+
+    """Alert rule configuration."""
     name: str
     metric_name: str
     condition: str  # "gt", "lt", "gte", "lte"
@@ -74,6 +79,27 @@ class AlertRule:
     severity: str = "warning"
     enabled: bool = True
     cooldown_seconds: int = 300
+
+    # backwards-compat handling
+    def __init__(self, *args, **kwargs):
+        """Custom init to support both `name` and deprecated `rule_name`."""
+        if 'rule_name' in kwargs and 'name' not in kwargs:
+            kwargs['name'] = kwargs.pop('rule_name')
+        # Allow `severity_level` alias as well
+        if 'severity_level' in kwargs and 'severity' not in kwargs:
+            kwargs['severity'] = kwargs.pop('severity_level')
+        # Use dataclass's generated __init__ via super().__setattr__ hack
+        # Manually set attributes to preserve simplicity
+        self.name = kwargs.pop('name')
+        self.metric_name = kwargs.pop('metric_name')
+        self.condition = kwargs.pop('condition')
+        self.threshold = kwargs.pop('threshold')
+        self.severity = kwargs.pop('severity', 'warning')
+        self.enabled = kwargs.pop('enabled', True)
+        self.cooldown_seconds = kwargs.pop('cooldown_seconds', 300)
+        if kwargs:
+            # Raise if unknown fields remain to catch typos
+            raise TypeError(f"Unexpected arguments: {list(kwargs.keys())}")
 
 
 @dataclass

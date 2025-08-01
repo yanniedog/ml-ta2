@@ -1,0 +1,17 @@
+[generation]
+maximum_search_time = 60
+population = 50
+elite = 10
+
+[output]
+format_with_black = true
+
+[seeding]
+constant_seeding = true
+initial_population_seeding = true
+
+[type_inference]
+type_inference_strategy = "NONE"
+
+[testing]
+use_archive = false

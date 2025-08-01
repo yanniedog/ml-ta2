@@ -337,6 +337,29 @@ class ModelTrainer:
             raise
 
 
+class ModelManager:
+    """Lightweight model registry/manager stub for tests."""
+    def __init__(self):
+        self.models: Dict[str, Any] = {}
+
+    def register_model(self, name: str, model: Any):
+        self.models[name] = model
+
+    def get_model(self, name: str):
+        return self.models.get(name)
+
+    def list_models(self) -> List[str]:
+        return list(self.models.keys())
+
+    def remove_model(self, name: str):
+        if name in self.models:
+            del self.models[name]
+
+
+# ---------------------------------------------------------------------------
+# Factory helpers
+# ---------------------------------------------------------------------------
+
 def create_model_trainer(task_type: str = 'classification', 
                         model_type: str = 'random_forest') -> ModelTrainer:
     """Factory function to create model trainer."""

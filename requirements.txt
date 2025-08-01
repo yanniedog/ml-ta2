@@ -24,6 +24,7 @@ numba>=0.57.0
 pytest>=7.4.0
 pytest-cov>=4.1.0
 pytest-mock>=3.11.0
+pynguin>=0.30.0
 
 # Code Quality
 black>=23.0.0
