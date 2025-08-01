@@ -55,6 +55,7 @@ from .exceptions import (
 )
 from .utils import ensure_directory, save_parquet, TimeUtils
 from .logging_config import get_logger
+from .circuit_breaker import get_circuit_breaker, CircuitBreakerConfig, CircuitBreakerError
 
 logger = get_logger("data_fetcher").get_logger()
 
@@ -76,6 +77,15 @@ class RequestManager:
         self.timeout = config.get('timeout_seconds', 30)
         self.max_retries = config.get('max_retries', 5)
         self.backoff_factor = config.get('backoff_factor', 2)
+        
+        # Circuit breaker configuration
+        cb_config = CircuitBreakerConfig(
+            failure_threshold=config.get('circuit_breaker_failure_threshold', 5),
+            recovery_timeout=config.get('circuit_breaker_recovery_timeout', 60.0),
+            success_threshold=config.get('circuit_breaker_success_threshold', 3),
+            expected_exception=(requests.RequestException, NetworkError, DataFetchError)
+        )
+        self.circuit_breaker = get_circuit_breaker("binance_api", cb_config)
         
         # Session for connection pooling
         self.session = requests.Session()
@@ -102,12 +112,27 @@ class RequestManager:
         # Add current request time
         self.request_times.append(current_time)
     
+    def make_request(
+        self,
+        url: str,
+        method: str = 'GET',
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None
+    ) -> Dict[str, Any]:
+        """Make HTTP request with circuit breaker, rate limiting and error handling."""
+        try:
+            return self.circuit_breaker.call(self._make_request_internal, url, method, params, data, headers)
+        except CircuitBreakerError as e:
+            self.logger.error(f"Circuit breaker rejected request to {url}", state=e.state.value)
+            raise NetworkError(f"Service unavailable due to circuit breaker: {e}", url=url)
+    
     @retry(
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=1, min=4, max=10),
         retry=retry_if_exception_type((requests.RequestException, NetworkError))
     )
-    def make_request(
+    def _make_request_internal(
         self,
         url: str,
         method: str = 'GET',

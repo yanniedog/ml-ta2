@@ -98,6 +98,16 @@ __pypackages__/
 celerybeat-schedule
 celerybeat.pid
 
+# ML-TA Project specific generated files
+/logs/
+/artefacts/
+/reports/
+/cache/
+/backup/
+/temp/
+ab_testing_dump.txt
+
+
 # SageMath parsed files
 *.sage.py
 

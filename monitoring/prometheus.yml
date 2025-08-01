@@ -1,0 +1,13 @@
+global:
+  evaluation_interval: 15s
+  scrape_interval: 15s
+scrape_configs:
+- job_name: ml-ta-api
+  metrics_path: /metrics
+  static_configs:
+  - targets:
+    - localhost:8000
+- job_name: ml-ta-worker
+  static_configs:
+  - targets:
+    - localhost:8001

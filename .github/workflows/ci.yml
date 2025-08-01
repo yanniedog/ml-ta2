@@ -1,0 +1,43 @@
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build Docker image
+      run: docker build -t ml-ta:latest .
+    - name: Run integration tests
+      run: docker-compose -f docker-compose.test.yml up --abort-on-container-exit
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: pip install -r requirements.txt -r requirements-dev.txt
+    - name: Run tests
+      run: python -m pytest tests/ -v --cov=src --cov-report=xml
+    - name: Run security scan
+      run: python -c "from src.security_audit import create_security_auditor; auditor
+        = create_security_auditor(); auditor.run_comprehensive_audit()"
+    - name: Run performance tests
+      run: python scripts/performance_tests.py
+    strategy:
+      matrix:
+        python-version:
+        - '3.9'
+        - '3.10'
+        - '3.11'
+name: ML-TA Local CI/CD
+'on':
+  pull_request:
+    branches:
+    - main
+  push:
+    branches:
+    - main
+    - develop
