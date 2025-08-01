@@ -5,7 +5,7 @@
 
 // App configuration
 const config = {
-    apiBaseUrl: 'http://localhost:8000/api/v1',
+    apiBaseUrl: '/api/v1',  // Using relative path to work with the proxy
     endpoints: {
         health: '/health',
         predict: '/predict',
